@@ -112,16 +112,16 @@
 <body>
     <div class="container">
         <h1>Playlist to Zip</h1>
-        <p class="subtitle">Spotify playlists &amp; SoundCloud sets → downloadable zip</p>
+        <p class="subtitle">Paste a Spotify playlist → audio sourced from SoundCloud → zip</p>
 
-        <input id="url" type="text" placeholder="Paste a Spotify or SoundCloud URL..." autofocus>
+        <input id="url" type="text" placeholder="Paste a Spotify playlist URL..." autofocus>
 
         <div class="options">
             <div>
                 <label for="format">Format</label>
                 <select id="format">
+                    <option value="wav" selected>WAV</option>
                     <option value="mp3">MP3</option>
-                    <option value="wav">WAV</option>
                 </select>
             </div>
             <div>

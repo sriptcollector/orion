@@ -1,4 +1,4 @@
-"""Resolve Spotify playlist URLs into a list of track metadata."""
+"""Resolve Spotify playlist URLs into track metadata, then source audio from SoundCloud."""
 
 import re
 from dataclasses import dataclass

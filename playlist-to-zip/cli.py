@@ -18,8 +18,8 @@ def main():
     )
     parser.add_argument("url", help="Spotify playlist/album URL or SoundCloud set/track URL")
     parser.add_argument(
-        "-f", "--format", choices=["mp3", "wav"], default="mp3",
-        help="Audio format (default: mp3)",
+        "-f", "--format", choices=["wav", "mp3"], default="wav",
+        help="Audio format (default: wav)",
     )
     parser.add_argument(
         "-q", "--quality", default="192",

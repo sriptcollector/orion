@@ -1,6 +1,5 @@
-"""Download audio files using yt-dlp with YouTube search fallback."""
+"""Download audio files from SoundCloud using yt-dlp."""
 
-import os
 import re
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -32,7 +31,7 @@ class DownloadProgress:
 
 
 class AudioDownloader:
-    """Downloads audio using yt-dlp. Handles both direct URLs and search queries."""
+    """Downloads audio from SoundCloud using yt-dlp search."""
 
     def __init__(self, output_dir: Path, audio_format: str = "", audio_quality: str = ""):
         self.output_dir = output_dir
@@ -61,13 +60,17 @@ class AudioDownloader:
         }
 
     def download_track(self, query: str, filename: str) -> DownloadResult:
-        """Download a single track. `query` can be a URL or a search string."""
+        """Download a single track by searching SoundCloud.
+
+        `query` can be a direct SoundCloud URL or a search string like
+        "Artist - Title" which will be searched on SoundCloud.
+        """
         safe_name = re.sub(r'[<>:"/\\|?*]', '_', filename)
         opts = self._ydl_opts(safe_name)
 
-        # If query isn't a URL, search YouTube
+        # If query isn't a URL, search SoundCloud (not YouTube)
         if not query.startswith(("http://", "https://")):
-            query = f"ytsearch1:{query}"
+            query = f"scsearch1:{query}"
 
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
