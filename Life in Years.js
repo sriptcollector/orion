@@ -23,18 +23,18 @@ const EMPTY = new Color("#1a2a40")   // dark blue-grey for unlived, blends with 
 // ── Widget ──────────────────────────────────────────
 const widget = new ListWidget()
 widget.backgroundColor = Color.clear()
-widget.setPadding(16, 16, 16, 16)
+widget.setPadding(20, 20, 20, 20)
 
 // Dot grid — boxes only, no text
+widget.addSpacer(null)
+
 const gridStack = widget.addStack()
 gridStack.layoutVertically()
 gridStack.centerAlignContent()
 
-const dotSize = 12
-const dotGap = 2
-const dotRadius = 2
-
-widget.addSpacer(null)
+const dotSize = 28
+const dotGap = 4
+const dotRadius = 4
 
 for (let row = 0; row < ROWS; row++) {
   const rowStack = gridStack.addStack()
@@ -67,7 +67,7 @@ widget.refreshAfterDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
 if (config.runsInWidget) {
   Script.setWidget(widget)
 } else {
-  await widget.presentSmall()
+  await widget.presentExtraLarge()
 }
 
 Script.complete()
