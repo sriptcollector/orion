@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: gray; icon-glyph: circle;
+// icon-color: deep-blue; icon-glyph: circle;
 
 // ── Config ──────────────────────────────────────────
 const BIRTHDAY = new Date(2008, 11, 3) // Dec 3, 2008
@@ -17,26 +17,15 @@ const hadBirthdayThisYear =
 if (!hadBirthdayThisYear) age--
 
 // ── Colors ──────────────────────────────────────────
-const BG = new Color("#0a0a0a")
-const LIVED = new Color("#333333")  // dark grey for lived years
-const EMPTY = new Color("#aaaaaa")  // light grey for remaining
-const LABEL = new Color("#555555")
-const ACCENT = new Color("#888888")
+const LIVED = new Color("#c0c0c0")   // silver for lived years
+const EMPTY = new Color("#1a2a40")   // dark blue-grey for unlived, blends with background
 
 // ── Widget ──────────────────────────────────────────
 const widget = new ListWidget()
-widget.backgroundColor = BG
-widget.setPadding(16, 16, 12, 16)
+widget.backgroundColor = Color.clear()
+widget.setPadding(16, 16, 16, 16)
 
-// Title
-const title = widget.addText("LIFE IN YEARS")
-title.font = Font.semiboldSystemFont(9)
-title.textColor = LABEL
-title.letterSpacing = 1
-
-widget.addSpacer(null)
-
-// Dot grid — square boxes
+// Dot grid — boxes only, no text
 const gridStack = widget.addStack()
 gridStack.layoutVertically()
 gridStack.centerAlignContent()
@@ -44,6 +33,8 @@ gridStack.centerAlignContent()
 const dotSize = 12
 const dotGap = 2
 const dotRadius = 2
+
+widget.addSpacer(null)
 
 for (let row = 0; row < ROWS; row++) {
   const rowStack = gridStack.addStack()
@@ -68,21 +59,6 @@ for (let row = 0; row < ROWS; row++) {
 }
 
 widget.addSpacer(null)
-
-// Stats
-const statsStack = widget.addStack()
-statsStack.layoutHorizontally()
-statsStack.centerAlignContent()
-
-const livedText = statsStack.addText(`${age} lived`)
-livedText.font = Font.mediumSystemFont(9)
-livedText.textColor = ACCENT
-
-statsStack.addSpacer()
-
-const leftText = statsStack.addText(`${LIFESPAN - age} left`)
-leftText.font = Font.mediumSystemFont(9)
-leftText.textColor = LABEL
 
 // Refresh daily to catch birthday
 widget.refreshAfterDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
