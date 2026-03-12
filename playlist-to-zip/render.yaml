@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: playlist-to-zip
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SPOTIFY_CLIENT_ID
+        sync: false
+      - key: SPOTIFY_CLIENT_SECRET
+        sync: false

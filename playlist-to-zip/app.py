@@ -1,6 +1,8 @@
 """FastAPI web service for playlist-to-zip conversion."""
 
 import shutil
+import time
+import threading
 import uuid
 from pathlib import Path
 
@@ -18,8 +20,29 @@ from zipper import create_zip
 app = FastAPI(title="Playlist to Zip", version="1.0.0")
 templates = Jinja2Templates(directory="templates")
 
-# Track active jobs
+# Track active jobs: job_id -> {status, progress, zip_path, error, name, created_at}
 jobs: dict[str, dict] = {}
+
+# Auto-delete zip files and job entries older than 30 minutes
+CLEANUP_MAX_AGE_S = 30 * 60
+
+
+def _cleanup_loop():
+    """Background thread that removes old downloads every 5 minutes."""
+    while True:
+        time.sleep(300)
+        now = time.time()
+        expired = [jid for jid, j in jobs.items()
+                   if now - j.get("created_at", now) > CLEANUP_MAX_AGE_S
+                   and j["status"] in ("done", "error")]
+        for jid in expired:
+            job = jobs.pop(jid, None)
+            if job and job.get("zip_path"):
+                Path(job["zip_path"]).unlink(missing_ok=True)
+
+
+_cleanup_thread = threading.Thread(target=_cleanup_loop, daemon=True)
+_cleanup_thread.start()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -48,6 +71,7 @@ async def convert(request: Request, background_tasks: BackgroundTasks):
         "zip_path": None,
         "error": None,
         "name": "",
+        "created_at": time.time(),
     }
 
     background_tasks.add_task(_run_job, job_id, url, audio_format, audio_quality)
