@@ -18,15 +18,15 @@ if (!hadBirthdayThisYear) age--
 
 // ── Colors ──────────────────────────────────────────
 const BG = new Color("#0a0a0a")
-const LIVED = new Color("#e0e0e0")
-const EMPTY = new Color("#1a1a1a")
+const LIVED = new Color("#333333")  // dark grey for lived years
+const EMPTY = new Color("#aaaaaa")  // light grey for remaining
 const LABEL = new Color("#555555")
 const ACCENT = new Color("#888888")
 
 // ── Widget ──────────────────────────────────────────
 const widget = new ListWidget()
 widget.backgroundColor = BG
-widget.setPadding(12, 12, 12, 12)
+widget.setPadding(16, 16, 12, 16)
 
 // Title
 const title = widget.addText("LIFE IN YEARS")
@@ -34,15 +34,15 @@ title.font = Font.semiboldSystemFont(9)
 title.textColor = LABEL
 title.letterSpacing = 1
 
-widget.addSpacer(6)
+widget.addSpacer(null)
 
-// Dot grid — square boxes instead of circles
+// Dot grid — square boxes
 const gridStack = widget.addStack()
 gridStack.layoutVertically()
 gridStack.centerAlignContent()
 
-const dotSize = 10
-const dotGap = 3
+const dotSize = 12
+const dotGap = 2
 const dotRadius = 2
 
 for (let row = 0; row < ROWS; row++) {
@@ -67,7 +67,7 @@ for (let row = 0; row < ROWS; row++) {
   if (row < ROWS - 1) gridStack.addSpacer(dotGap)
 }
 
-widget.addSpacer(6)
+widget.addSpacer(null)
 
 // Stats
 const statsStack = widget.addStack()
