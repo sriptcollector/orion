@@ -3,10 +3,18 @@
 // icon-color: gray; icon-glyph: circle;
 
 // ── Config ──────────────────────────────────────────
-const AGE = 17
+const BIRTHDAY = new Date(2008, 11, 3) // Dec 3, 2008
 const LIFESPAN = 100
 const COLS = 10
 const ROWS = LIFESPAN / COLS
+
+// Auto-calculate age based on birthday
+const today = new Date()
+let age = today.getFullYear() - BIRTHDAY.getFullYear()
+const hadBirthdayThisYear =
+  today.getMonth() > BIRTHDAY.getMonth() ||
+  (today.getMonth() === BIRTHDAY.getMonth() && today.getDate() >= BIRTHDAY.getDate())
+if (!hadBirthdayThisYear) age--
 
 // ── Colors ──────────────────────────────────────────
 const BG = new Color("#0a0a0a")
@@ -18,66 +26,72 @@ const ACCENT = new Color("#888888")
 // ── Widget ──────────────────────────────────────────
 const widget = new ListWidget()
 widget.backgroundColor = BG
-widget.setPadding(16, 16, 16, 16)
+widget.setPadding(12, 12, 12, 12)
 
 // Title
 const title = widget.addText("LIFE IN YEARS")
-title.font = Font.semiboldSystemFont(10)
+title.font = Font.semiboldSystemFont(9)
 title.textColor = LABEL
 title.letterSpacing = 1
 
-widget.addSpacer(10)
+widget.addSpacer(6)
 
-// Dot grid
+// Dot grid — square boxes instead of circles
 const gridStack = widget.addStack()
 gridStack.layoutVertically()
 gridStack.centerAlignContent()
+
+const dotSize = 10
+const dotGap = 3
+const dotRadius = 2
 
 for (let row = 0; row < ROWS; row++) {
   const rowStack = gridStack.addStack()
   rowStack.layoutHorizontally()
   rowStack.centerAlignContent()
-  rowStack.spacing = 4
+  rowStack.spacing = dotGap
 
   for (let col = 0; col < COLS; col++) {
     const yearIndex = row * COLS + col
-    const dotStack = rowStack.addStack()
-    const dotSize = config.widgetFamily === "small" ? 5 : 7
-    dotStack.size = new Size(dotSize, dotSize)
-    dotStack.cornerRadius = dotSize / 2
+    const dot = rowStack.addStack()
+    dot.size = new Size(dotSize, dotSize)
+    dot.cornerRadius = dotRadius
 
-    if (yearIndex < AGE) {
-      dotStack.backgroundColor = LIVED
+    if (yearIndex < age) {
+      dot.backgroundColor = LIVED
     } else {
-      dotStack.backgroundColor = EMPTY
+      dot.backgroundColor = EMPTY
     }
   }
 
-  if (row < ROWS - 1) gridStack.addSpacer(4)
+  if (row < ROWS - 1) gridStack.addSpacer(dotGap)
 }
 
-widget.addSpacer(10)
+widget.addSpacer(6)
 
 // Stats
 const statsStack = widget.addStack()
 statsStack.layoutHorizontally()
 statsStack.centerAlignContent()
 
-const livedText = statsStack.addText(`${AGE} lived`)
-livedText.font = Font.mediumSystemFont(10)
+const livedText = statsStack.addText(`${age} lived`)
+livedText.font = Font.mediumSystemFont(9)
 livedText.textColor = ACCENT
 
 statsStack.addSpacer()
 
-const leftText = statsStack.addText(`${LIFESPAN - AGE} left`)
-leftText.font = Font.mediumSystemFont(10)
+const leftText = statsStack.addText(`${LIFESPAN - age} left`)
+leftText.font = Font.mediumSystemFont(9)
 leftText.textColor = LABEL
+
+// Refresh daily to catch birthday
+widget.refreshAfterDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
 // ── Present ─────────────────────────────────────────
 if (config.runsInWidget) {
   Script.setWidget(widget)
 } else {
-  await widget.presentMedium()
+  await widget.presentSmall()
 }
 
 Script.complete()
