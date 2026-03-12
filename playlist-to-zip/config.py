@@ -8,7 +8,7 @@ SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
 
 AUDIO_FORMAT = os.getenv("AUDIO_FORMAT", "wav")
-AUDIO_QUALITY = os.getenv("AUDIO_QUALITY", "192")
+AUDIO_QUALITY = os.getenv("AUDIO_QUALITY", "320")
 
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))

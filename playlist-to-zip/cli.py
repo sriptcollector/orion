@@ -22,8 +22,8 @@ def main():
         help="Audio format (default: wav)",
     )
     parser.add_argument(
-        "-q", "--quality", default="192",
-        help="Audio quality/bitrate for mp3 in kbps (default: 192)",
+        "-q", "--quality", default="320",
+        help="Audio quality/bitrate for mp3 in kbps (default: 320)",
     )
     parser.add_argument(
         "-o", "--output", default=".",
