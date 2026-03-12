@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playlist to Zip</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 540px;
+            width: 100%;
+            padding: 2rem;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.3rem;
+            font-weight: 700;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #141414;
+            color: #e0e0e0;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus { border-color: #555; }
+        input[type="text"]::placeholder { color: #555; }
+        .options {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #141414;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        label { font-size: 0.85rem; color: #888; display: block; margin-bottom: 0.3rem; }
+        button {
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 8px;
+            background: #fff;
+            color: #000;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background: #141414;
+            display: none;
+        }
+        .status.visible { display: block; }
+        .status-text { margin-bottom: 0.5rem; }
+        .progress-bar {
+            height: 4px;
+            background: #222;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #fff;
+            border-radius: 2px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+        .download-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: #fff;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+        .error { color: #ff6b6b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Playlist to Zip</h1>
+        <p class="subtitle">Spotify playlists &amp; SoundCloud sets → downloadable zip</p>
+
+        <input id="url" type="text" placeholder="Paste a Spotify or SoundCloud URL..." autofocus>
+
+        <div class="options">
+            <div>
+                <label for="format">Format</label>
+                <select id="format">
+                    <option value="mp3">MP3</option>
+                    <option value="wav">WAV</option>
+                </select>
+            </div>
+            <div>
+                <label for="quality">Quality (MP3)</label>
+                <select id="quality">
+                    <option value="128">128 kbps</option>
+                    <option value="192" selected>192 kbps</option>
+                    <option value="256">256 kbps</option>
+                    <option value="320">320 kbps</option>
+                </select>
+            </div>
+        </div>
+
+        <button id="btn" onclick="startConvert()">Convert</button>
+
+        <div id="status" class="status">
+            <div id="status-text" class="status-text"></div>
+            <div class="progress-bar"><div id="progress" class="progress-fill"></div></div>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        let pollTimer = null;
+
+        async function startConvert() {
+            const url = document.getElementById('url').value.trim();
+            if (!url) return;
+
+            const btn = document.getElementById('btn');
+            const status = document.getElementById('status');
+            const statusText = document.getElementById('status-text');
+            const progress = document.getElementById('progress');
+            const result = document.getElementById('result');
+
+            btn.disabled = true;
+            status.classList.add('visible');
+            statusText.textContent = 'Starting conversion...';
+            progress.style.width = '0%';
+            result.innerHTML = '';
+
+            try {
+                const res = await fetch('/api/convert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url,
+                        format: document.getElementById('format').value,
+                        quality: document.getElementById('quality').value,
+                    }),
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    statusText.innerHTML = `<span class="error">${data.error}</span>`;
+                    btn.disabled = false;
+                    return;
+                }
+
+                pollStatus(data.job_id);
+            } catch (e) {
+                statusText.innerHTML = `<span class="error">Request failed: ${e.message}</span>`;
+                btn.disabled = false;
+            }
+        }
+
+        function pollStatus(jobId) {
+            if (pollTimer) clearInterval(pollTimer);
+
+            pollTimer = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/status/${jobId}`);
+                    const data = await res.json();
+                    const statusText = document.getElementById('status-text');
+                    const progress = document.getElementById('progress');
+                    const result = document.getElementById('result');
+                    const btn = document.getElementById('btn');
+
+                    if (data.status === 'resolving') {
+                        statusText.textContent = `Resolving tracks${data.name ? ': ' + data.name : ''}...`;
+                    } else if (data.status === 'downloading' && data.progress) {
+                        const p = data.progress;
+                        const pct = p.total > 0 ? ((p.completed + p.failed) / p.total * 100) : 0;
+                        progress.style.width = pct + '%';
+                        statusText.textContent = `Downloading: ${p.completed}/${p.total} tracks — ${p.current_track}`;
+                    } else if (data.status === 'zipping') {
+                        statusText.textContent = 'Creating zip archive...';
+                        progress.style.width = '100%';
+                    } else if (data.status === 'done') {
+                        clearInterval(pollTimer);
+                        statusText.textContent = `Ready! ${data.name}`;
+                        progress.style.width = '100%';
+                        result.innerHTML = `<a class="download-link" href="${data.download_url}">Download Zip</a>`;
+                        btn.disabled = false;
+                    } else if (data.status === 'error') {
+                        clearInterval(pollTimer);
+                        statusText.innerHTML = `<span class="error">${data.error}</span>`;
+                        btn.disabled = false;
+                    }
+                } catch (e) {
+                    // keep polling on network blips
+                }
+            }, 1500);
+        }
+
+        document.getElementById('url').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') startConvert();
+        });
+    </script>
+</body>
+</html>
