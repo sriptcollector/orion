@@ -1,10 +1,13 @@
 {
-  "name": "Life in Years",
-  "short_name": "Life",
+  "name": "Héroe Vital",
+  "short_name": "HéroeVital",
+  "description": "Tu aventura RPG de salud - autogestión con personaje de videojuego",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "orientation": "landscape",
+  "background_color": "#0d0d1a",
+  "theme_color": "#0d0d1a",
+  "lang": "es",
   "icons": [
     {
       "src": "icon.svg",
