@@ -11,8 +11,57 @@
 </head>
 <body>
 
+<!-- ═══════════════════════════════════ LANGUAGE SELECTION ═══════════════════════ -->
+<div id="screen-lang" class="screen">
+  <div class="lang-container">
+    <div class="ob-logo" style="animation:pulse 2s infinite">⚔️</div>
+    <h1 class="ob-title" style="margin-bottom:8px">HÉROE VITAL</h1>
+    <p class="ob-sub" id="lang-choose-text">ELIGE TU IDIOMA / CHOOSE YOUR LANGUAGE</p>
+    <div class="lang-buttons">
+      <button class="lang-btn" onclick="chooseLang('es')">
+        <span class="lang-flag">🇪🇸</span>
+        <span class="lang-name">ESPAÑOL</span>
+      </button>
+      <button class="lang-btn" onclick="chooseLang('en')">
+        <span class="lang-flag">🇺🇸</span>
+        <span class="lang-name">ENGLISH</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ AUTH SCREEN ══════════════════════════════ -->
+<div id="screen-auth" class="screen">
+  <div class="auth-container">
+    <div class="ob-logo">⚔️</div>
+    <h1 class="ob-title">HÉROE VITAL</h1>
+    <div class="auth-box">
+      <h2 class="auth-title" id="auth-title">INICIAR SESIÓN</h2>
+      <div class="auth-form">
+        <label id="auth-lbl-user">NOMBRE DE USUARIO</label>
+        <input id="auth-username" type="text" maxlength="20" onkeydown="authKeydown(event)">
+        <label id="auth-lbl-pass" style="margin-top:10px">CONTRASEÑA</label>
+        <input id="auth-password" type="password" maxlength="50" onkeydown="authKeydown(event)">
+        <div id="auth-confirm-row" style="display:none">
+          <label id="auth-lbl-confirm" style="margin-top:10px">CONFIRMAR CONTRASEÑA</label>
+          <input id="auth-confirm" type="password" maxlength="50" onkeydown="authKeydown(event)">
+        </div>
+      </div>
+      <div id="auth-error" class="auth-error"></div>
+      <button class="btn-primary btn-full" id="auth-btn-submit" onclick="authSubmit()">ENTRAR</button>
+      <button class="btn-secondary btn-full" style="margin-top:8px" id="auth-btn-toggle" onclick="authToggle()">¿Sin cuenta? Regístrate</button>
+      <hr class="panel-divider">
+      <button class="btn-secondary btn-full" id="auth-btn-offline" onclick="authOffline()">JUGAR SIN CUENTA</button>
+    </div>
+    <div class="auth-lang-toggle">
+      <button class="lang-mini-btn" onclick="chooseLang('es')">🇪🇸 ES</button>
+      <button class="lang-mini-btn" onclick="chooseLang('en')">🇺🇸 EN</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════ ONBOARDING ═════════════════════════════════ -->
-<div id="screen-onboarding" class="screen active">
+<div id="screen-onboarding" class="screen">
   <div class="ob-container">
     <div id="ob-step-1" class="ob-step active">
       <div class="ob-logo">⚔️</div>
@@ -331,6 +380,8 @@
         <hr class="panel-divider">
         <div class="panel-title">📊 MIS STATS DE BATALLA</div>
         <div id="my-battle-stats" class="battle-stats-box"></div>
+        <hr class="panel-divider">
+        <button class="btn-red btn-sm btn-full" onclick="logoutUser()">🚪 CERRAR SESIÓN</button>
       </div>
       <div class="panel amigos-list-panel">
         <div class="panel-title">👥 AMIGOS (<span id="friends-count">0</span>)</div>
@@ -446,15 +497,26 @@
 <div id="modal-overlay" class="hidden" onclick="closeModal(event)">
   <div id="modal-box" onclick="event.stopPropagation()">
     <div id="modal-content"></div>
-    <button class="btn-primary" style="margin-top:16px" onclick="closeModal()">CERRAR</button>
+    <button class="btn-primary" style="margin-top:16px" id="modal-close-btn" onclick="closeModal()">CERRAR</button>
   </div>
 </div>
 
 <div id="toast" class="toast hidden"></div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="lang.js"></script>
 <script src="game.js"></script>
 <script src="battle.js"></script>
 <script src="online.js"></script>
+<script src="auth.js"></script>
+<script>
+  // Boot: run after all scripts loaded
+  window.addEventListener('DOMContentLoaded', function() {
+    // game.js DOMContentLoaded already ran? Use a timeout to ensure auth goes last
+    setTimeout(function() {
+      if (window.bootAuth) window.bootAuth();
+    }, 50);
+  });
+</script>
 </body>
 </html>

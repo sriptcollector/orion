@@ -26,10 +26,14 @@ window.onlineModule = (() => {
 
     setStatus('connecting');
 
-    // Create deterministic but unique peer ID from profile name + session
-    const base = G && G.profile
-      ? G.profile.nombre.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Date.now().toString(36)
-      : 'heroe_' + Math.random().toString(36).slice(2, 10);
+    // Use username-based deterministic PeerID (from auth.js)
+    // hv_{username} — same formula used in agregarAmigo()
+    const base = window.currentUser
+      ? window.currentUser.peerId
+      : 'hv_guest_' + Math.random().toString(36).slice(2, 8);
+
+    // Destroy previous peer if reinitializing
+    if (peer) { try { peer.destroy(); } catch(e) {} }
 
     peer = new Peer(base, {
       debug: 0,
@@ -251,7 +255,7 @@ window.onlineModule = (() => {
   function buildShareProfile() {
     if (!G || !G.profile || !G.char) return {};
     return {
-      nombre:      G.profile.nombre,
+      nombre:      window.currentUser ? window.currentUser.displayName : G.profile.nombre,
       heroeNombre: G.profile.heroeNombre,
       clase:       G.profile.clase,
       nivel:       G.char.nivel,
@@ -262,6 +266,7 @@ window.onlineModule = (() => {
       hpMax:       G.char.hpMax,
       monedas:     G.char.monedas,
       racha:       G.char.racha,
+      peerId:      window.currentUser ? window.currentUser.peerId : null,
     };
   }
 
@@ -276,19 +281,21 @@ window.onlineModule = (() => {
     dot.className = 'online-dot';
     if (state === 'connected') {
       dot.classList.add('connected');
-      text.textContent = 'Conectado online ✓';
+      text.textContent = (window.t ? t('free.online.c') : 'Connected ✓');
     } else if (state === 'connecting') {
       dot.classList.add('connecting');
-      text.textContent = 'Conectando...';
+      text.textContent = (window.t ? t('free.online.cn') : 'Connecting...');
     } else {
       dot.classList.add('offline');
-      text.textContent = 'Sin conexión';
+      text.textContent = (window.t ? t('free.online.dc') : 'Not connected');
     }
   }
 
   function updatePeerIdDisplay(id) {
+    // Show username-based ID in friends tab
     const el = document.getElementById('my-peer-id');
-    if (el) el.textContent = id;
+    if (el && window.currentUser) el.textContent = window.currentUser.peerId;
+    else if (el) el.textContent = id;
   }
 
   function showIncomingChallenge(profile, isLibre) {
@@ -296,10 +303,19 @@ window.onlineModule = (() => {
     const text = document.getElementById('challenge-alert-text');
     if (!box || !text) return;
 
-    const name   = profile ? profile.heroeNombre : 'Alguien';
-    const tipo   = isLibre ? '(BATALLA LIBRE)' : '(CON MONEDAS)';
-    text.textContent = `¡${name} te desafía a batalla! ${tipo}`;
+    const name = profile ? (profile.heroeNombre || profile.nombre || 'Alguien') : 'Alguien';
+    const tipo = isLibre
+      ? (window.t ? t('free.libre_type') : '(FREE BATTLE)')
+      : (window.t ? t('free.coins_type') : '(WITH COINS)');
+    text.textContent = window.t
+      ? t('free.incoming', { name, type: tipo })
+      : `${name} challenges you! ${tipo}`;
     box.classList.remove('hidden');
+    // Also update button labels
+    const acceptBtn = document.querySelector('#incoming-challenge .btn-primary');
+    const rejectBtn = document.querySelector('#incoming-challenge .btn-secondary');
+    if (acceptBtn) acceptBtn.textContent = window.t ? t('free.accept') : '✅ ACCEPT';
+    if (rejectBtn) rejectBtn.textContent = window.t ? t('free.reject') : '❌ REJECT';
   }
 
   function hideIncomingChallenge() {
@@ -321,9 +337,10 @@ window.onlineModule = (() => {
 // ─── Auto-init when game starts ───────────────────────────────────────────────────
 
 // We hook into the initMainGame flow by observing screen changes
-const _origInit = window.initMainGame;
+// Hook into initMainGame to start P2P connection once game is running
+const _origInitMain = window.initMainGame;
 window.initMainGame = function() {
-  _origInit && _origInit();
-  // Small delay to ensure G is ready
-  setTimeout(() => window.onlineModule.init(), 500);
+  _origInitMain && _origInitMain();
+  // Delay to ensure G + currentUser are ready
+  setTimeout(() => window.onlineModule.init(), 600);
 };

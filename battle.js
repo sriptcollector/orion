@@ -72,9 +72,9 @@ window.startBattle = function(enemy) {
   updateBattleHPBars();
   enableBattleMoves(true);
 
-  const startMsg = `¡${enemy.nombre} quiere combatir!`;
+  const startMsg = window.t ? t('battle.start', {name: enemy.nombre}) : `¡${enemy.nombre} quiere combatir!`;
   setTimeout(() => setBattleMessage(startMsg), 100);
-  setTimeout(() => setBattleMessage(`¡Comienza la batalla!`), 1800);
+  setTimeout(() => setBattleMessage(window.t ? t('battle.begin') : '¡Comienza la batalla!'), 1800);
 
   // Bind buttons
   document.getElementById('btn-attack-normal').onclick  = () => playerMove('normal');
@@ -233,10 +233,11 @@ function battleEnd(resultado) {
                 : 8;
   G.char.exp += expGain;
 
+  const hn = G.profile.heroeNombre;
   const msgs = {
-    victoria: `¡${G.profile.heroeNombre} GANÓ LA BATALLA! 🏆`,
-    derrota:  `${G.profile.heroeNombre} fue derrotado... 💀`,
-    empate:   '¡La batalla terminó en empate! 🤝',
+    victoria: window.t ? t('battle.victory',{name:hn}) : `¡${hn} GANÓ LA BATALLA! 🏆`,
+    derrota:  window.t ? t('battle.defeat', {name:hn}) : `${hn} fue derrotado... 💀`,
+    empate:   window.t ? t('battle.draw')               : '¡La batalla terminó en empate! 🤝',
   };
   setBattleMessage(msgs[resultado]);
 

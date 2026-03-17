@@ -7,8 +7,11 @@
 
 // ─── Constants ───────────────────────────────────────────────────────────────────
 
-const SAVE_KEY   = 'heroeVital_v1';
+const SAVE_KEY   = 'heroeVital_v1'; // fallback; overridden by auth.js per user
 const DECAY_INTERVAL = 60 * 1000; // 1 minute
+
+// t() is provided by lang.js; fallback if lang.js not yet loaded
+if (!window.t) window.t = (k) => k;
 
 const CLASE_BONUS = {
   guerrero: { ataque:5, defensa:5, agilidad:1, fuerza:4, hp:0  },
@@ -93,12 +96,14 @@ function defaultState() {
 function saveGame() {
   if (!G) return;
   G.char.ultimoSave = Date.now();
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); } catch(e) {}
+  const key = window.getUserSaveKey ? window.getUserSaveKey() : SAVE_KEY;
+  try { localStorage.setItem(key, JSON.stringify(G)); } catch(e) {}
 }
 
 function loadGame() {
+  const key = window.getUserSaveKey ? window.getUserSaveKey() : SAVE_KEY;
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(key);
     if (raw) return JSON.parse(raw);
   } catch(e) {}
   return null;
@@ -658,16 +663,28 @@ function renderFriendsTab() {
   if (!G) return;
   document.getElementById('friends-count').textContent = G.amigos.length;
 
+  // Show current user's online ID (username-based PeerID)
+  if (window.currentUser) {
+    document.getElementById('my-peer-id').textContent = window.currentUser.peerId;
+  }
+
   // Battle stats
   document.getElementById('my-battle-stats').innerHTML = `
-    <div><strong>${G.char.ganadasTotal}</strong> victorias</div>
-    <div><strong>${G.char.perdidasTotal}</strong> derrotas</div>
-    <div><strong>${G.char.racha}</strong> días de racha</div>
-    <div><strong>${G.char.monedas}</strong> 🪙 monedas</div>
+    <div><strong>${G.char.ganadasTotal}</strong> ${t('friends.wins')}</div>
+    <div><strong>${G.char.perdidasTotal}</strong> ${t('friends.losses')}</div>
+    <div><strong>${G.char.racha}</strong> ${t('friends.streak')}</div>
+    <div><strong>${G.char.monedas}</strong> 🪙 ${t('friends.coins')}</div>
   `;
 
+  // Logout button label
+  const logoutBtn = document.querySelector('.btn-red.btn-full');
+  if (logoutBtn) logoutBtn.textContent = '🚪 ' + t('friends.logout');
+
   const list = document.getElementById('friends-list');
-  if (!G.amigos.length) { list.innerHTML = '<div class="empty-state">Sin amigos aún.<br>¡Comparte tu ID para jugar!</div>'; return; }
+  if (!G.amigos.length) {
+    list.innerHTML = `<div class="empty-state">${t('friends.empty').replace('\\n','<br>')}</div>`;
+    return;
+  }
   list.innerHTML = G.amigos.map(f => `
     <div class="friend-card">
       <div class="friend-sprite">${CLASS_SPRITE[f.clase] || '🧙'}</div>
@@ -677,24 +694,38 @@ function renderFriendsTab() {
         <div class="friend-stats">
           ⚔️ ${f.ataque || 10} | 🛡️ ${f.defensa || 10} | 🪙 ${f.monedas || 0}
         </div>
+        <div style="font-size:6px;color:var(--gray);margin-top:2px">ID: ${f.peerId || f.id}</div>
       </div>
       <div class="friend-actions">
-        <button class="btn-primary btn-sm" onclick="iniciarBatallaContra('${f.id}', false)">⚔️ BATALLAR</button>
+        <button class="btn-primary btn-sm" onclick="iniciarBatallaContra('${f.id}', false)">${t('friends.battle')}</button>
         <button class="btn-secondary btn-sm" onclick="eliminarAmigo('${f.id}')">✕</button>
       </div>
     </div>`).join('');
 }
 
 function agregarAmigo() {
-  const nombre = document.getElementById('add-friend-name').value.trim();
-  const peerId = document.getElementById('add-friend-peer').value.trim();
-  if (!nombre) { showToast('¡Ingresa el nombre del amigo!'); return; }
+  const username = document.getElementById('add-friend-name').value.trim();
+  if (!username) { showToast(t('friends.err.name')); return; }
 
-  // Add as local friend entry (peer data fetched via online.js when available)
+  // Derive PeerID from username (same formula as auth.js)
+  const peerId = 'hv_' + username.toLowerCase().replace(/[^a-z0-9_]/g, '');
+
+  // Don't add yourself
+  if (window.currentUser && peerId === window.currentUser.peerId) {
+    showToast('¡No puedes agregarte a ti mismo!');
+    return;
+  }
+
+  // Don't duplicate
+  if (G.amigos.find(a => a.peerId === peerId)) {
+    showToast('¡Ese amigo ya está en tu lista!');
+    return;
+  }
+
   const newFriend = {
-    id:         peerId || ('local_' + Date.now()),
-    nombre:     nombre,
-    heroeNombre:nombre,
+    id:         peerId,
+    nombre:     username,
+    heroeNombre:username,
     clase:      'guerrero',
     nivel:      1,
     ataque:     10, defensa:10, agilidad:10, fuerza:10,
@@ -703,8 +734,8 @@ function agregarAmigo() {
     online:     false,
   };
 
-  // If online and peerId given, request their actual stats
-  if (peerId && window.onlineModule) {
+  // Request real stats if online module available
+  if (window.onlineModule) {
     window.onlineModule.requestFriendData(peerId, newFriend);
   }
 
@@ -712,8 +743,7 @@ function agregarAmigo() {
   saveGame();
   renderFriendsTab();
   document.getElementById('add-friend-name').value = '';
-  document.getElementById('add-friend-peer').value = '';
-  showToast(`¡${nombre} agregado como amigo!`);
+  showToast(`${username} ${t('friends.added')}`);
 }
 
 function eliminarAmigo(id) {
@@ -915,11 +945,9 @@ function onBattleEnd(resultado, enemy, monedasGanadas, monedasPerdidas) {
   renderFriendsTab();
 }
 
-// ─── Boot ─────────────────────────────────────────────────────────────────────────
+// ─── Boot (called by auth.js after login/register) ───────────────────────────────
 
-window.addEventListener('DOMContentLoaded', () => {
-  const saved = loadGame();
-
+window.bootGame = function() {
   // Render sprite previews in onboarding
   document.querySelectorAll('.sprite-preview[data-type]').forEach(el => {
     el.textContent = CLASS_SPRITE[el.dataset.type] || '⚔️';
@@ -929,11 +957,34 @@ window.addEventListener('DOMContentLoaded', () => {
     el.style.justifyContent = 'center';
   });
 
+  // Apply translations to onboarding elements before showing
+  applyOnboardingTranslations();
+
+  const saved = loadGame();
   if (saved && saved.onboarding) {
     G = saved;
     applyDecay();
     initMainGame();
   } else {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-onboarding').classList.add('active');
   }
-});
+};
+
+function applyOnboardingTranslations() {
+  // Apply i18n to static onboarding labels that are set in HTML
+  const safe = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
+  // Tabs (re-rendered on initMainGame, but set here for safety)
+  safe('tab-btn-inicio',   t('tab.home'));
+  safe('tab-btn-registro', t('tab.log'));
+  safe('tab-btn-amigos',   t('tab.friends'));
+  safe('tab-btn-tienda',   t('tab.shop'));
+  safe('tab-btn-libre',    t('tab.free'));
+  // Modal close
+  safe('modal-close-btn',  t('modal.close'));
+  // Battle buttons
+  safe('btn-attack-normal', t('battle.attack'));
+  safe('btn-attack-special',t('battle.special'));
+  safe('btn-defend',        t('battle.defend'));
+  safe('btn-flee',          t('battle.flee'));
+}
