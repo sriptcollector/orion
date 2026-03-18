@@ -1,61 +1,43 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Héroe Vital</title>
+  <title>Vital Hero</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="game.css">
 </head>
 <body>
 
-<!-- ═══════════════════════════════════ LANGUAGE SELECTION ═══════════════════════ -->
-<div id="screen-lang" class="screen">
-  <div class="lang-container">
-    <div class="ob-logo" style="animation:pulse 2s infinite">⚔️</div>
-    <h1 class="ob-title" style="margin-bottom:8px">HÉROE VITAL</h1>
-    <p class="ob-sub" id="lang-choose-text">ELIGE TU IDIOMA / CHOOSE YOUR LANGUAGE</p>
-    <div class="lang-buttons">
-      <button class="lang-btn" onclick="chooseLang('es')">
-        <span class="lang-flag">🇪🇸</span>
-        <span class="lang-name">ESPAÑOL</span>
-      </button>
-      <button class="lang-btn" onclick="chooseLang('en')">
-        <span class="lang-flag">🇺🇸</span>
-        <span class="lang-name">ENGLISH</span>
-      </button>
-    </div>
-  </div>
-</div>
-
 <!-- ═══════════════════════════════════ AUTH SCREEN ══════════════════════════════ -->
 <div id="screen-auth" class="screen">
-  <div class="auth-container">
-    <div class="ob-logo">⚔️</div>
-    <h1 class="ob-title">HÉROE VITAL</h1>
+  <div class="auth-wrap">
+    <div class="auth-logo">⚔️</div>
+    <h1 class="auth-game-title">VITAL HERO</h1>
+    <p class="auth-tagline">Your health adventure</p>
     <div class="auth-box">
-      <h2 class="auth-title" id="auth-title">INICIAR SESIÓN</h2>
+      <h2 class="auth-title" id="auth-title">LOGIN</h2>
       <div class="auth-form">
-        <label id="auth-lbl-user">NOMBRE DE USUARIO</label>
-        <input id="auth-username" type="text" maxlength="20" onkeydown="authKeydown(event)">
-        <label id="auth-lbl-pass" style="margin-top:10px">CONTRASEÑA</label>
-        <input id="auth-password" type="password" maxlength="50" onkeydown="authKeydown(event)">
+        <label>USERNAME</label>
+        <input id="auth-username" type="text" maxlength="20" placeholder="Enter username..." onkeydown="authKeydown(event)">
+        <label style="margin-top:10px">PASSWORD</label>
+        <input id="auth-password" type="password" maxlength="50" placeholder="Enter password..." onkeydown="authKeydown(event)">
         <div id="auth-confirm-row" style="display:none">
-          <label id="auth-lbl-confirm" style="margin-top:10px">CONFIRMAR CONTRASEÑA</label>
-          <input id="auth-confirm" type="password" maxlength="50" onkeydown="authKeydown(event)">
+          <label style="margin-top:10px">CONFIRM PASSWORD</label>
+          <input id="auth-confirm" type="password" maxlength="50" placeholder="Confirm password..." onkeydown="authKeydown(event)">
+        </div>
+        <div id="auth-email-row" style="display:none">
+          <label style="margin-top:10px">EMAIL <span style="color:var(--gray);font-size:6px">(optional — to recover account)</span></label>
+          <input id="auth-email" type="email" maxlength="80" placeholder="your@email.com" onkeydown="authKeydown(event)">
         </div>
       </div>
       <div id="auth-error" class="auth-error"></div>
-      <button class="btn-primary btn-full" id="auth-btn-submit" onclick="authSubmit()">ENTRAR</button>
-      <button class="btn-secondary btn-full" style="margin-top:8px" id="auth-btn-toggle" onclick="authToggle()">¿Sin cuenta? Regístrate</button>
+      <button class="btn-primary btn-full" id="auth-btn-submit" onclick="authSubmit()">ENTER</button>
+      <button class="btn-secondary btn-full" style="margin-top:8px" id="auth-btn-toggle" onclick="authToggle()">No account? Sign up here</button>
       <hr class="panel-divider">
-      <button class="btn-secondary btn-full" id="auth-btn-offline" onclick="authOffline()">JUGAR SIN CUENTA</button>
-    </div>
-    <div class="auth-lang-toggle">
-      <button class="lang-mini-btn" onclick="chooseLang('es')">🇪🇸 ES</button>
-      <button class="lang-mini-btn" onclick="chooseLang('en')">🇺🇸 EN</button>
+      <button class="btn-ghost btn-full" onclick="authOffline()">PLAY WITHOUT ACCOUNT</button>
     </div>
   </div>
 </div>
@@ -63,161 +45,186 @@
 <!-- ═══════════════════════════════════ ONBOARDING ═════════════════════════════════ -->
 <div id="screen-onboarding" class="screen">
   <div class="ob-container">
+
+    <!-- Step 1: Names + Avatar -->
     <div id="ob-step-1" class="ob-step active">
       <div class="ob-logo">⚔️</div>
-      <h1 class="ob-title">HÉROE VITAL</h1>
-      <p class="ob-sub">Tu aventura de salud comienza aquí</p>
+      <h1 class="ob-title">VITAL HERO</h1>
+      <p class="ob-sub">Your health adventure starts here</p>
       <div class="ob-form">
-        <label>NOMBRE DE JUGADOR</label>
-        <input id="ob-nombre" type="text" placeholder="Escribe tu nombre..." maxlength="16">
-        <label style="margin-top:16px">NOMBRE DEL HÉROE</label>
-        <input id="ob-heroe-nombre" type="text" placeholder="Nombre de tu personaje..." maxlength="16">
+        <label>PLAYER NAME</label>
+        <input id="ob-nombre" type="text" placeholder="Your name..." maxlength="16">
+        <label style="margin-top:14px">HERO NAME</label>
+        <input id="ob-heroe-nombre" type="text" placeholder="Your character's name..." maxlength="16">
+        <div class="avatar-capture-section">
+          <label style="margin-top:14px">PIXEL AVATAR <span style="color:var(--gray);font-size:6px">(take a selfie for your pixel portrait)</span></label>
+          <div class="avatar-capture-row">
+            <div class="avatar-preview-box" id="avatar-preview-box">
+              <canvas id="avatar-canvas" class="hidden"></canvas>
+              <div id="avatar-placeholder">
+                <span style="font-size:28px">👤</span>
+                <span style="font-size:7px;color:var(--gray);display:block;margin-top:4px">No photo yet</span>
+              </div>
+            </div>
+            <div class="avatar-btns">
+              <button class="btn-secondary btn-sm" onclick="triggerAvatarCamera()">📷 TAKE SELFIE</button>
+              <div style="font-size:6px;color:var(--gray);margin-top:6px;line-height:1.8">Your face becomes<br>a pixel art avatar!</div>
+            </div>
+          </div>
+          <input type="file" id="avatar-input" accept="image/*" capture="user" style="display:none" onchange="handleAvatarPhoto(event)">
+        </div>
       </div>
-      <button class="btn-primary" onclick="obNext(1)">COMENZAR →</button>
+      <button class="btn-primary" onclick="obNext(1)">BEGIN →</button>
     </div>
 
+    <!-- Step 2: Physical data -->
     <div id="ob-step-2" class="ob-step">
-      <h2 class="ob-title-sm">📊 DATOS FÍSICOS</h2>
+      <h2 class="ob-title-sm">📊 PHYSICAL DATA</h2>
       <div class="ob-form ob-grid2">
         <div>
-          <label>PESO (kg)</label>
+          <label>WEIGHT (kg)</label>
           <input id="ob-peso" type="number" placeholder="70" min="30" max="300">
         </div>
         <div>
-          <label>ALTURA (cm)</label>
+          <label>HEIGHT (cm)</label>
           <input id="ob-altura" type="number" placeholder="170" min="100" max="250">
         </div>
         <div>
-          <label>EDAD</label>
+          <label>AGE</label>
           <input id="ob-edad" type="number" placeholder="25" min="13" max="99">
         </div>
         <div>
-          <label>SEXO</label>
+          <label>SEX</label>
           <select id="ob-sexo">
-            <option value="M">Masculino</option>
-            <option value="F">Femenino</option>
-            <option value="O">Otro</option>
+            <option value="M">Male</option>
+            <option value="F">Female</option>
+            <option value="O">Other</option>
           </select>
         </div>
       </div>
       <div class="ob-nav">
-        <button class="btn-secondary" onclick="obBack(2)">← ATRÁS</button>
-        <button class="btn-primary" onclick="obNext(2)">SIGUIENTE →</button>
+        <button class="btn-secondary" onclick="obBack(2)">← BACK</button>
+        <button class="btn-primary" onclick="obNext(2)">NEXT →</button>
       </div>
     </div>
 
+    <!-- Step 3: Goal -->
     <div id="ob-step-3" class="ob-step">
-      <h2 class="ob-title-sm">🎯 ¿CUÁL ES TU OBJETIVO?</h2>
+      <h2 class="ob-title-sm">🎯 WHAT IS YOUR GOAL?</h2>
       <div class="ob-goals">
         <div class="goal-card" data-goal="perderPeso" onclick="selectGoal(this)">
           <div class="goal-emoji">⚡</div>
-          <div class="goal-name">PERDER PESO</div>
-          <div class="goal-desc">Déficit calórico y cardio</div>
+          <div class="goal-name">LOSE WEIGHT</div>
+          <div class="goal-desc">Caloric deficit and cardio</div>
         </div>
         <div class="goal-card" data-goal="definirse" onclick="selectGoal(this)">
           <div class="goal-emoji">🗡️</div>
-          <div class="goal-name">DEFINIRSE</div>
-          <div class="goal-desc">Tonificar y reducir grasa</div>
+          <div class="goal-name">GET LEAN</div>
+          <div class="goal-desc">Tone muscles and reduce fat</div>
         </div>
         <div class="goal-card" data-goal="mantenerse" onclick="selectGoal(this)">
           <div class="goal-emoji">⚖️</div>
-          <div class="goal-name">MANTENERSE</div>
-          <div class="goal-desc">Mantener composición actual</div>
+          <div class="goal-name">MAINTAIN</div>
+          <div class="goal-desc">Keep current body composition</div>
         </div>
         <div class="goal-card" data-goal="ganarMasa" onclick="selectGoal(this)">
           <div class="goal-emoji">💪</div>
-          <div class="goal-name">GANAR MASA</div>
-          <div class="goal-desc">Superávit + alta proteína</div>
+          <div class="goal-name">BULK UP</div>
+          <div class="goal-desc">Caloric surplus + high protein</div>
         </div>
         <div class="goal-card" data-goal="ganarFuerza" onclick="selectGoal(this)">
           <div class="goal-emoji">🔥</div>
-          <div class="goal-name">GANAR FUERZA</div>
-          <div class="goal-desc">Fuerza máxima y potencia</div>
+          <div class="goal-name">GAIN STRENGTH</div>
+          <div class="goal-desc">Maximum strength and power</div>
         </div>
       </div>
       <div class="ob-nav">
-        <button class="btn-secondary" onclick="obBack(3)">← ATRÁS</button>
-        <button class="btn-primary" onclick="obNext(3)">SIGUIENTE →</button>
+        <button class="btn-secondary" onclick="obBack(3)">← BACK</button>
+        <button class="btn-primary" onclick="obNext(3)">NEXT →</button>
       </div>
     </div>
 
+    <!-- Step 4: Activity -->
     <div id="ob-step-4" class="ob-step">
-      <h2 class="ob-title-sm">🏃 NIVEL DE ACTIVIDAD</h2>
+      <h2 class="ob-title-sm">🏃 ACTIVITY LEVEL</h2>
       <div class="ob-activities">
         <div class="act-card" data-act="sedentario" onclick="selectActivity(this)">
           <span class="act-icon">🛋️</span>
-          <span class="act-name">SEDENTARIO</span>
-          <span class="act-desc">Poco o nada de ejercicio</span>
+          <span class="act-name">SEDENTARY</span>
+          <span class="act-desc">Little or no exercise</span>
         </div>
         <div class="act-card" data-act="ligeramenteActivo" onclick="selectActivity(this)">
           <span class="act-icon">🚶</span>
-          <span class="act-name">LIGERAMENTE ACTIVO</span>
-          <span class="act-desc">Ejercicio 1-3 días/semana</span>
+          <span class="act-name">LIGHTLY ACTIVE</span>
+          <span class="act-desc">Exercise 1-3 days/week</span>
         </div>
         <div class="act-card" data-act="moderadamenteActivo" onclick="selectActivity(this)">
           <span class="act-icon">🏃</span>
-          <span class="act-name">MODERADAMENTE ACTIVO</span>
-          <span class="act-desc">Ejercicio 3-5 días/semana</span>
+          <span class="act-name">MODERATELY ACTIVE</span>
+          <span class="act-desc">Exercise 3-5 days/week</span>
         </div>
         <div class="act-card" data-act="muyActivo" onclick="selectActivity(this)">
           <span class="act-icon">💪</span>
-          <span class="act-name">MUY ACTIVO</span>
-          <span class="act-desc">Entreno intenso 6-7 días</span>
+          <span class="act-name">VERY ACTIVE</span>
+          <span class="act-desc">Intense training 6-7 days</span>
         </div>
         <div class="act-card" data-act="atletico" onclick="selectActivity(this)">
           <span class="act-icon">🏆</span>
-          <span class="act-name">ATLÉTICO</span>
-          <span class="act-desc">Deportista o trabajo físico</span>
+          <span class="act-name">ATHLETE</span>
+          <span class="act-desc">Professional sport or physical job</span>
         </div>
       </div>
       <div class="ob-nav">
-        <button class="btn-secondary" onclick="obBack(4)">← ATRÁS</button>
-        <button class="btn-primary" onclick="obNext(4)">SIGUIENTE →</button>
+        <button class="btn-secondary" onclick="obBack(4)">← BACK</button>
+        <button class="btn-primary" onclick="obNext(4)">NEXT →</button>
       </div>
     </div>
 
+    <!-- Step 5: Class -->
     <div id="ob-step-5" class="ob-step">
-      <h2 class="ob-title-sm">🧙 ELIGE TU CLASE</h2>
+      <h2 class="ob-title-sm">🧙 CHOOSE YOUR CLASS</h2>
       <div class="ob-classes">
         <div class="class-card" data-class="guerrero" onclick="selectClass(this)">
           <div class="sprite-preview" data-type="guerrero"></div>
-          <div class="class-name">GUERRERO</div>
-          <div class="class-stats"><span>⚔️ +5 ATQ</span><span>🛡️ +5 DEF</span></div>
-          <div class="class-desc">Maestro del combate cuerpo a cuerpo</div>
+          <div class="class-name">WARRIOR</div>
+          <div class="class-stats"><span>⚔️ +5 ATK</span><span>🛡️ +5 DEF</span></div>
+          <div class="class-desc">Master of close combat</div>
         </div>
         <div class="class-card" data-class="mago" onclick="selectClass(this)">
           <div class="sprite-preview" data-type="mago"></div>
-          <div class="class-name">MAGO</div>
-          <div class="class-stats"><span>⚔️ +3 ATQ</span><span>⚡ +2 AGI</span></div>
-          <div class="class-desc">Magia devastadora con bonus proteína</div>
+          <div class="class-name">MAGE</div>
+          <div class="class-stats"><span>⚔️ +3 ATK</span><span>⚡ +2 AGI</span></div>
+          <div class="class-desc">Devastating magic with protein bonus</div>
         </div>
         <div class="class-card" data-class="arquero" onclick="selectClass(this)">
           <div class="sprite-preview" data-type="arquero"></div>
-          <div class="class-name">ARQUERO</div>
-          <div class="class-stats"><span>⚔️ +4 ATQ</span><span>⚡ +5 AGI</span></div>
-          <div class="class-desc">Ágil y veloz, potenciado por actividad</div>
+          <div class="class-name">ARCHER</div>
+          <div class="class-stats"><span>⚔️ +4 ATK</span><span>⚡ +5 AGI</span></div>
+          <div class="class-desc">Agile and swift, boosted by activity</div>
         </div>
         <div class="class-card" data-class="sanador" onclick="selectClass(this)">
           <div class="sprite-preview" data-type="sanador"></div>
-          <div class="class-name">SANADOR</div>
-          <div class="class-stats"><span>🛡️ +3 DEF</span><span>❤️ +20 PS</span></div>
-          <div class="class-desc">Resistencia suprema, recupera PS rápido</div>
+          <div class="class-name">HEALER</div>
+          <div class="class-stats"><span>🛡️ +3 DEF</span><span>❤️ +20 HP</span></div>
+          <div class="class-desc">Supreme resilience, fast HP recovery</div>
         </div>
       </div>
       <div class="ob-nav">
-        <button class="btn-secondary" onclick="obBack(5)">← ATRÁS</button>
-        <button class="btn-primary" onclick="obNext(5)">SIGUIENTE →</button>
+        <button class="btn-secondary" onclick="obBack(5)">← BACK</button>
+        <button class="btn-primary" onclick="obNext(5)">NEXT →</button>
       </div>
     </div>
 
+    <!-- Step 6: Summary -->
     <div id="ob-step-6" class="ob-step">
-      <h2 class="ob-title-sm">✅ ¡RESUMEN!</h2>
+      <h2 class="ob-title-sm">✅ SUMMARY!</h2>
       <div id="ob-summary" class="ob-summary-box"></div>
       <div class="ob-nav">
-        <button class="btn-secondary" onclick="obBack(6)">← ATRÁS</button>
-        <button class="btn-primary btn-gold" onclick="startGame()">⚔️ ¡COMENZAR AVENTURA!</button>
+        <button class="btn-secondary" onclick="obBack(6)">← BACK</button>
+        <button class="btn-primary btn-gold" onclick="startGame()">⚔️ BEGIN ADVENTURE!</button>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -228,8 +235,8 @@
   <div id="hud">
     <div class="hud-left">
       <div class="hud-name">
-        <span id="hud-sprite" class="hud-mini-sprite"></span>
-        <span id="hud-player-name">HÉROE</span>
+        <div class="hud-avatar" id="hud-avatar"></div>
+        <span id="hud-player-name">HERO</span>
         <span class="hud-badge">LV</span>
         <span id="hud-level">1</span>
       </div>
@@ -261,235 +268,306 @@
     </div>
     <div class="hud-right">
       <div class="hud-coins">🪙 <span id="hud-coins">0</span></div>
-      <div class="hud-streak">🔥 RACHA: <span id="hud-streak">0</span></div>
+      <div class="hud-streak">🔥 STREAK: <span id="hud-streak">0</span></div>
       <div class="hud-meta" id="hud-meta-cal">🍽️ 0/0 cal</div>
       <div class="hud-meta" id="hud-meta-agua">💧 0/0 ml</div>
     </div>
   </div>
 
-  <!-- Tab Nav -->
+  <!-- Tab Content Wrapper -->
+  <div id="tab-content-wrapper">
+
+    <!-- ─── HOME TAB ─── -->
+    <div id="tab-inicio" class="tab-content active">
+      <div class="inicio-layout">
+        <div class="house-panel panel">
+          <div class="panel-title">🏠 MY CASTLE</div>
+          <div class="house-scene" id="house-scene">
+            <div class="house-floor"></div>
+            <div class="house-back-wall"></div>
+            <div class="house-items" id="house-items"></div>
+            <div class="character-in-house" id="char-in-house"></div>
+            <div class="house-speech" id="house-speech"></div>
+          </div>
+        </div>
+        <div class="stats-side">
+          <div class="panel">
+            <div class="panel-title">⚔️ HERO STATISTICS</div>
+            <div class="stat-grid" id="stat-grid"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">🎯 TODAY'S GOALS</div>
+            <div class="daily-goals" id="daily-goals"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">🏆 BATTLE HISTORY</div>
+            <div class="battle-history" id="battle-history-mini">No battles yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── LOG TAB ─── -->
+    <div id="tab-registro" class="tab-content">
+      <div class="registro-layout">
+        <div class="panel registro-form-panel">
+          <div class="panel-title">📸 LOG FOOD OR DRINK</div>
+          <div class="photo-area" id="photo-area" onclick="triggerCamera()">
+            <div id="photo-preview-inner">
+              <div class="camera-icon">📷</div>
+              <div class="camera-text">TAP TO TAKE PHOTO</div>
+            </div>
+            <img id="food-photo" class="food-photo hidden" alt="Food photo">
+          </div>
+          <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+          <div class="registro-form">
+            <div class="form-row-grid">
+              <div>
+                <label>TYPE</label>
+                <select id="food-type">
+                  <option value="comida">🍽️ Food</option>
+                  <option value="agua">💧 Water</option>
+                  <option value="bebida">🥤 Drink</option>
+                  <option value="snack">🍎 Snack</option>
+                  <option value="suplemento">💊 Supplement</option>
+                </select>
+              </div>
+              <div>
+                <label>DESCRIPTION</label>
+                <input id="food-desc" type="text" placeholder="What did you eat?">
+              </div>
+            </div>
+            <div class="form-row-grid form-row-4">
+              <div>
+                <label>CALORIES</label>
+                <input id="food-cal" type="number" placeholder="0" min="0">
+              </div>
+              <div>
+                <label>PROTEIN(g)</label>
+                <input id="food-prot" type="number" placeholder="0" min="0">
+              </div>
+              <div>
+                <label>CARBS(g)</label>
+                <input id="food-carbs" type="number" placeholder="0" min="0">
+              </div>
+              <div>
+                <label>WATER(ml)</label>
+                <input id="food-agua" type="number" placeholder="0" min="0">
+              </div>
+            </div>
+            <button class="btn-primary btn-full" onclick="registrarAlimento()">⚔️ LOG AND GAIN EXPERIENCE</button>
+          </div>
+        </div>
+        <div class="panel registro-log-panel">
+          <div class="panel-title">📋 TODAY'S LOG</div>
+          <div class="log-totals" id="log-totals"></div>
+          <div class="log-list" id="log-list"><div class="empty-state">No logs today. Start eating!</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── WORLD TAB (Friends + Battle) ─── -->
+    <div id="tab-world" class="tab-content">
+      <div class="subnav-bar">
+        <button class="subnav-btn active" onclick="showWorldSub('friends')" id="world-btn-friends">👥 FRIENDS</button>
+        <button class="subnav-btn" onclick="showWorldSub('battle')" id="world-btn-battle">⚔️ BATTLE</button>
+      </div>
+      <div class="subnav-content">
+
+        <!-- Friends sub-tab -->
+        <div id="world-sub-friends" class="world-sub active">
+          <div class="amigos-layout">
+            <div class="panel amigos-side">
+              <div class="panel-title">🆔 YOUR ONLINE ID</div>
+              <div class="my-peer-id" id="my-peer-id">Connecting...</div>
+              <button class="btn-secondary btn-sm" onclick="copyPeerId()">📋 COPY ID</button>
+              <hr class="panel-divider">
+              <div class="panel-title">➕ ADD FRIEND</div>
+              <input id="add-friend-name" type="text" placeholder="Friend's username...">
+              <input id="add-friend-peer" type="text" placeholder="Friend's online ID..." style="margin-top:6px">
+              <button class="btn-primary btn-sm" style="margin-top:8px" onclick="agregarAmigo()">ADD FRIEND</button>
+              <hr class="panel-divider">
+              <div class="panel-title">📊 MY BATTLE STATS</div>
+              <div id="my-battle-stats" class="battle-stats-box"></div>
+            </div>
+            <div class="panel amigos-list-panel">
+              <div class="panel-title">👥 FRIENDS (<span id="friends-count">0</span>)</div>
+              <div class="friends-list" id="friends-list"><div class="empty-state">No friends yet. Share your ID to play!</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Battle sub-tab -->
+        <div id="world-sub-battle" class="world-sub">
+          <div class="libre-layout">
+            <div class="panel libre-side">
+              <div class="panel-title">⚡ FREE BATTLE</div>
+              <p class="libre-desc">Fight with no coin stakes!<br>Just glory and fun.</p>
+              <div class="libre-my-char" id="libre-my-char"></div>
+              <hr class="panel-divider">
+              <div class="panel-title">🌐 ONLINE CHALLENGE</div>
+              <div class="online-status-row" id="libre-online-status">
+                <span class="online-dot" id="libre-dot"></span>
+                <span id="libre-conn-text">Connecting...</span>
+              </div>
+              <input id="libre-peer-id" type="text" placeholder="Paste rival's ID...">
+              <button class="btn-primary btn-sm" style="margin-top:8px" onclick="librarChallenge()">⚡ CHALLENGE ONLINE</button>
+              <hr class="panel-divider">
+              <div id="incoming-challenge" class="hidden">
+                <div class="challenge-alert" id="challenge-alert-text"></div>
+                <button class="btn-primary btn-sm" onclick="acceptChallenge()">✅ ACCEPT</button>
+                <button class="btn-secondary btn-sm" onclick="rejectChallenge()">❌ REJECT</button>
+              </div>
+            </div>
+            <div class="panel libre-opponents-panel">
+              <div class="panel-title">🤖 PRACTICE OPPONENTS (CPU)</div>
+              <div class="opponents-list" id="opponents-list"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── MENU TAB (Shop + Profile) ─── -->
+    <div id="tab-menu-main" class="tab-content">
+      <div class="subnav-bar">
+        <button class="subnav-btn active" onclick="showMenuSub('shop')" id="menu-btn-shop">🛒 SHOP</button>
+        <button class="subnav-btn" onclick="showMenuSub('profile')" id="menu-btn-profile">👤 PROFILE</button>
+      </div>
+      <div class="subnav-content">
+
+        <!-- Shop sub-tab -->
+        <div id="menu-sub-shop" class="menu-sub active">
+          <div class="tienda-layout">
+            <div class="panel tienda-side">
+              <div class="panel-title">🛒 THE KINGDOM SHOP</div>
+              <div class="tienda-coins-display">🪙 <span id="tienda-coins">0</span> coins</div>
+              <div class="panel-title" style="margin-top:12px">CATEGORIES</div>
+              <div class="tienda-cats" id="tienda-cats">
+                <button class="cat-btn active" onclick="filterShop(null, this)">ALL</button>
+                <button class="cat-btn" onclick="filterShop('accesorio', this)">💍 ACCESSORIES</button>
+                <button class="cat-btn" onclick="filterShop('arma', this)">⚔️ WEAPONS</button>
+                <button class="cat-btn" onclick="filterShop('armadura', this)">🛡️ ARMOR</button>
+                <button class="cat-btn" onclick="filterShop('mueble', this)">🪑 FURNITURE</button>
+                <button class="cat-btn" onclick="filterShop('decoracion', this)">🖼️ DECOR</button>
+              </div>
+              <hr class="panel-divider">
+              <div class="panel-title">✅ OWNED</div>
+              <div id="owned-items" class="owned-list">Nothing yet</div>
+            </div>
+            <div class="panel tienda-grid-panel">
+              <div class="panel-title" id="tienda-cat-title">ALL ITEMS</div>
+              <div class="tienda-grid" id="tienda-grid"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile sub-tab -->
+        <div id="menu-sub-profile" class="menu-sub">
+          <div id="profile-content" class="profile-layout"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- end tab-content-wrapper -->
+
+  <!-- Tab Nav (Bottom) -->
   <div id="tab-nav">
-    <button class="tab-btn active" onclick="showTab('inicio')" id="tab-btn-inicio">🏠 INICIO</button>
-    <button class="tab-btn" onclick="showTab('registro')" id="tab-btn-registro">📸 REGISTRO</button>
-    <button class="tab-btn" onclick="showTab('amigos')" id="tab-btn-amigos">👥 AMIGOS</button>
-    <button class="tab-btn" onclick="showTab('tienda')" id="tab-btn-tienda">🛒 TIENDA</button>
-    <button class="tab-btn tab-btn-libre" onclick="showTab('libre')" id="tab-btn-libre">⚡ BATALLA LIBRE</button>
-  </div>
-
-  <!-- ─── INICIO TAB ─── -->
-  <div id="tab-inicio" class="tab-content active">
-    <div class="inicio-layout">
-      <div class="house-panel panel">
-        <div class="panel-title">🏠 MI CASTILLO</div>
-        <div class="house-scene" id="house-scene">
-          <div class="house-floor"></div>
-          <div class="house-back-wall"></div>
-          <div class="house-items" id="house-items"></div>
-          <div class="character-in-house" id="char-in-house"></div>
-          <div class="house-speech" id="house-speech"></div>
-        </div>
-      </div>
-      <div class="stats-side">
-        <div class="panel">
-          <div class="panel-title">⚔️ ESTADÍSTICAS DEL HÉROE</div>
-          <div class="stat-grid" id="stat-grid"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-title">🎯 METAS DE HOY</div>
-          <div class="daily-goals" id="daily-goals"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-title">🏆 HISTORIAL DE BATALLAS</div>
-          <div class="battle-history" id="battle-history-mini">Sin batallas aún.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── REGISTRO TAB ─── -->
-  <div id="tab-registro" class="tab-content">
-    <div class="registro-layout">
-      <div class="panel registro-form-panel">
-        <div class="panel-title">📸 REGISTRAR ALIMENTO O BEBIDA</div>
-        <div class="photo-area" id="photo-area" onclick="triggerCamera()">
-          <div id="photo-preview-inner">
-            <div class="camera-icon">📷</div>
-            <div class="camera-text">TOCA PARA FOTOGRAFIAR</div>
-          </div>
-          <img id="food-photo" class="food-photo hidden" alt="Foto">
-        </div>
-        <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
-        <div class="registro-form">
-          <div class="form-row-grid">
-            <div>
-              <label>TIPO</label>
-              <select id="food-type">
-                <option value="comida">🍽️ Comida</option>
-                <option value="agua">💧 Agua</option>
-                <option value="bebida">🥤 Bebida</option>
-                <option value="snack">🍎 Snack</option>
-                <option value="suplemento">💊 Suplemento</option>
-              </select>
-            </div>
-            <div>
-              <label>DESCRIPCIÓN</label>
-              <input id="food-desc" type="text" placeholder="¿Qué comiste?">
-            </div>
-          </div>
-          <div class="form-row-grid form-row-4">
-            <div>
-              <label>CALORÍAS</label>
-              <input id="food-cal" type="number" placeholder="0" min="0">
-            </div>
-            <div>
-              <label>PROTEÍNAS(g)</label>
-              <input id="food-prot" type="number" placeholder="0" min="0">
-            </div>
-            <div>
-              <label>CARBS(g)</label>
-              <input id="food-carbs" type="number" placeholder="0" min="0">
-            </div>
-            <div>
-              <label>AGUA(ml)</label>
-              <input id="food-agua" type="number" placeholder="0" min="0">
-            </div>
-          </div>
-          <button class="btn-primary btn-full" onclick="registrarAlimento()">⚔️ REGISTRAR Y GANAR EXPERIENCIA</button>
-        </div>
-      </div>
-      <div class="panel registro-log-panel">
-        <div class="panel-title">📋 REGISTRO DE HOY</div>
-        <div class="log-totals" id="log-totals"></div>
-        <div class="log-list" id="log-list"><div class="empty-state">No hay registros hoy. ¡Empieza a comer!</div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── AMIGOS TAB ─── -->
-  <div id="tab-amigos" class="tab-content">
-    <div class="amigos-layout">
-      <div class="panel amigos-side">
-        <div class="panel-title">🆔 TU ID ONLINE</div>
-        <div class="my-peer-id" id="my-peer-id">Conectando...</div>
-        <button class="btn-secondary btn-sm" onclick="copyPeerId()">📋 COPIAR ID</button>
-        <hr class="panel-divider">
-        <div class="panel-title">➕ AGREGAR AMIGO</div>
-        <input id="add-friend-name" type="text" placeholder="Nombre del amigo...">
-        <input id="add-friend-peer" type="text" placeholder="ID online del amigo...">
-        <button class="btn-primary btn-sm" onclick="agregarAmigo()">AGREGAR AMIGO</button>
-        <hr class="panel-divider">
-        <div class="panel-title">📊 MIS STATS DE BATALLA</div>
-        <div id="my-battle-stats" class="battle-stats-box"></div>
-        <hr class="panel-divider">
-        <button class="btn-red btn-sm btn-full" onclick="logoutUser()">🚪 CERRAR SESIÓN</button>
-      </div>
-      <div class="panel amigos-list-panel">
-        <div class="panel-title">👥 AMIGOS (<span id="friends-count">0</span>)</div>
-        <div class="friends-list" id="friends-list"><div class="empty-state">Sin amigos aún. ¡Agrega a alguien!</div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── TIENDA TAB ─── -->
-  <div id="tab-tienda" class="tab-content">
-    <div class="tienda-layout">
-      <div class="panel tienda-side">
-        <div class="panel-title">🛒 TIENDA DEL REINO</div>
-        <div class="tienda-coins-display">🪙 <span id="tienda-coins">0</span> monedas</div>
-        <div class="panel-title" style="margin-top:12px">CATEGORÍAS</div>
-        <div class="tienda-cats" id="tienda-cats">
-          <button class="cat-btn active" onclick="filterShop(null, this)">TODOS</button>
-          <button class="cat-btn" onclick="filterShop('accesorio', this)">💍 ACCESORIOS</button>
-          <button class="cat-btn" onclick="filterShop('arma', this)">⚔️ ARMAS</button>
-          <button class="cat-btn" onclick="filterShop('armadura', this)">🛡️ ARMADURAS</button>
-          <button class="cat-btn" onclick="filterShop('mueble', this)">🪑 MUEBLES</button>
-          <button class="cat-btn" onclick="filterShop('decoracion', this)">🖼️ DECORACIONES</button>
-        </div>
-        <hr class="panel-divider">
-        <div class="panel-title">✅ COMPRADO</div>
-        <div id="owned-items" class="owned-list">Nada aún</div>
-      </div>
-      <div class="panel tienda-grid-panel">
-        <div class="panel-title" id="tienda-cat-title">TODOS LOS OBJETOS</div>
-        <div class="tienda-grid" id="tienda-grid"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── BATALLA LIBRE TAB ─── -->
-  <div id="tab-libre" class="tab-content">
-    <div class="libre-layout">
-      <div class="panel libre-side">
-        <div class="panel-title">⚡ BATALLA LIBRE</div>
-        <p class="libre-desc">¡Combate sin apuestas de monedas!<br>Solo por gloria y diversión.</p>
-        <div class="libre-my-char" id="libre-my-char"></div>
-        <hr class="panel-divider">
-        <div class="panel-title">🌐 DESAFÍO ONLINE</div>
-        <div class="online-status-row" id="libre-online-status">
-          <span class="online-dot" id="libre-dot"></span>
-          <span id="libre-conn-text">Conectando...</span>
-        </div>
-        <input id="libre-peer-id" type="text" placeholder="Pega el ID de tu rival...">
-        <button class="btn-primary btn-sm" onclick="librarChallenge()">⚡ DESAFIAR ONLINE</button>
-        <hr class="panel-divider">
-        <div id="incoming-challenge" class="hidden">
-          <div class="challenge-alert" id="challenge-alert-text"></div>
-          <button class="btn-primary btn-sm" onclick="acceptChallenge()">✅ ACEPTAR</button>
-          <button class="btn-secondary btn-sm" onclick="rejectChallenge()">❌ RECHAZAR</button>
-        </div>
-      </div>
-      <div class="panel libre-opponents-panel">
-        <div class="panel-title">🤖 RIVALES DE PRÁCTICA (CPU)</div>
-        <div class="opponents-list" id="opponents-list"></div>
-      </div>
-    </div>
+    <button class="tab-btn active" onclick="showTab('inicio')" id="tab-btn-inicio">
+      <span class="tab-icon">🏠</span>
+      <span class="tab-label">HOME</span>
+    </button>
+    <button class="tab-btn" onclick="showTab('registro')" id="tab-btn-registro">
+      <span class="tab-icon">📸</span>
+      <span class="tab-label">LOG</span>
+    </button>
+    <button class="tab-btn" onclick="showTab('world')" id="tab-btn-world">
+      <span class="tab-icon">🌐</span>
+      <span class="tab-label">WORLD</span>
+    </button>
+    <button class="tab-btn" onclick="showTab('menu-main')" id="tab-btn-menu-main">
+      <span class="tab-icon">☰</span>
+      <span class="tab-label">MENU</span>
+    </button>
   </div>
 
 </div><!-- end screen-game -->
 
 <!-- ═══════════════════════════════════ BATTLE SCREEN ══════════════════════════════ -->
 <div id="screen-battle" class="screen">
-  <div class="battle-bg">
+  <div class="battle-bg" id="battle-bg">
+
+    <!-- Animated background pixels -->
+    <div class="battle-bg-anim"></div>
+
     <div class="battle-arena">
+      <!-- Ground lines -->
+      <div class="battle-ground-enemy"></div>
+      <div class="battle-ground-player"></div>
+
       <!-- Enemy -->
       <div class="battle-enemy-side">
         <div class="battle-status-box enemy-box">
-          <div class="bsb-name" id="b-enemy-name">ENEMIGO</div>
+          <div class="bsb-name" id="b-enemy-name">ENEMY</div>
           <div class="bsb-level">LV <span id="b-enemy-lv">1</span></div>
           <div class="bsb-hp-row">
-            <span class="bsb-hp-label">PS</span>
+            <span class="bsb-hp-label">HP</span>
             <div class="bsb-hp-track"><div class="bsb-hp-bar" id="b-enemy-hp-bar"></div></div>
             <span class="bsb-hp-val" id="b-enemy-hp-val">100</span>
           </div>
         </div>
         <div class="battle-sprite enemy-sprite" id="b-enemy-sprite"></div>
       </div>
+
       <!-- Player -->
       <div class="battle-player-side">
         <div class="battle-sprite player-sprite" id="b-player-sprite"></div>
         <div class="battle-status-box player-box">
-          <div class="bsb-name" id="b-player-name">TÚ</div>
+          <div class="bsb-name" id="b-player-name">YOU</div>
           <div class="bsb-level">LV <span id="b-player-lv">1</span></div>
           <div class="bsb-hp-row">
-            <span class="bsb-hp-label">PS</span>
+            <span class="bsb-hp-label">HP</span>
             <div class="bsb-hp-track"><div class="bsb-hp-bar" id="b-player-hp-bar"></div></div>
             <span class="bsb-hp-val" id="b-player-hp-val">100</span>
           </div>
         </div>
       </div>
     </div>
-    <!-- Battle UI -->
+
+    <!-- Battle UI Bottom Bar -->
     <div class="battle-ui">
-      <div class="battle-message-box" id="battle-message-box">
-        <div class="battle-message" id="battle-message">¡Preparándose para la batalla!</div>
+
+      <!-- Chat Panel (left) -->
+      <div class="battle-chat-panel" id="battle-chat-panel">
+        <div class="chat-log" id="chat-log"></div>
+        <div class="chat-quick-btns">
+          <button onclick="sendChatMsg('GG!')">GG!</button>
+          <button onclick="sendChatMsg('EZ 😎')">EZ</button>
+          <button onclick="sendChatMsg('TOO SLOW! 💨')">SLOW</button>
+          <button onclick="sendChatMsg('NICE TRY 😂')">LOL</button>
+        </div>
+        <div class="chat-input-row">
+          <input id="chat-input" type="text" placeholder="Trash talk..." maxlength="40" onkeydown="if(event.key==='Enter')sendChatFromInput()">
+          <button onclick="sendChatFromInput()">→</button>
+        </div>
       </div>
+
+      <!-- Message Box (center) -->
+      <div class="battle-message-box" id="battle-message-box">
+        <div class="battle-message" id="battle-message">Preparing for battle!</div>
+      </div>
+
+      <!-- Battle Menu (right) -->
       <div class="battle-menu" id="battle-menu">
-        <button class="move-btn" id="btn-attack-normal">⚔️ ATACAR</button>
-        <button class="move-btn" id="btn-attack-special">✨ ESPECIAL</button>
-        <button class="move-btn" id="btn-defend">🛡️ DEFENDER</button>
-        <button class="move-btn" id="btn-flee">🏃 HUIR</button>
+        <button class="move-btn" id="btn-attack-normal">⚔️ ATTACK</button>
+        <button class="move-btn" id="btn-attack-special">✨ SPECIAL</button>
+        <button class="move-btn" id="btn-defend">🛡️ DEFEND</button>
+        <button class="move-btn" id="btn-flee">🏃 FLEE</button>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -497,7 +575,7 @@
 <div id="modal-overlay" class="hidden" onclick="closeModal(event)">
   <div id="modal-box" onclick="event.stopPropagation()">
     <div id="modal-content"></div>
-    <button class="btn-primary" style="margin-top:16px" id="modal-close-btn" onclick="closeModal()">CERRAR</button>
+    <button class="btn-primary" style="margin-top:16px" id="modal-close-btn" onclick="closeModal()">CLOSE</button>
   </div>
 </div>
 
@@ -505,14 +583,13 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="lang.js"></script>
+<script src="music.js"></script>
 <script src="game.js"></script>
 <script src="battle.js"></script>
 <script src="online.js"></script>
 <script src="auth.js"></script>
 <script>
-  // Boot: run after all scripts loaded
   window.addEventListener('DOMContentLoaded', function() {
-    // game.js DOMContentLoaded already ran? Use a timeout to ensure auth goes last
     setTimeout(function() {
       if (window.bootAuth) window.bootAuth();
     }, 50);

@@ -5,7 +5,7 @@
 
 'use strict';
 
-window.LANG_CODE = localStorage.getItem('hv_lang') || 'es';
+window.LANG_CODE = 'en'; // Force English
 
 const TRANSLATIONS = {
 
