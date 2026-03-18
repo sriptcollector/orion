@@ -136,11 +136,54 @@ let ob = {
   nombre: '', heroeNombre: '',
   peso: 0, altura: 0, edad: 0, sexo: 'M',
   objetivo: '', actividad: '', clase: '',
-  avatarData: null,
+  avatarData: null, rawPhotoData: null,
+  pesoUnit: 'kg', alturaUnit: 'cm',
+};
+
+window.setWeightUnit = function(unit, btn) {
+  ob.pesoUnit = unit;
+  document.querySelectorAll('.unit-toggle .unit-btn').forEach(b => {
+    if (b.textContent === 'kg' || b.textContent === 'lbs') b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  const inp = document.getElementById('ob-peso');
+  const val = parseFloat(inp.value);
+  if (val) {
+    inp.value = unit === 'lbs' ? Math.round(val * 2.20462) : Math.round(val / 2.20462);
+  }
+  inp.placeholder = unit === 'kg' ? '70' : '154';
+};
+
+window.setHeightUnit = function(unit, btn) {
+  ob.alturaUnit = unit;
+  document.querySelectorAll('.unit-toggle .unit-btn').forEach(b => {
+    if (b.textContent === 'cm' || b.textContent === 'ft·in') b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  const cmInp = document.getElementById('ob-altura');
+  const ftRow = document.getElementById('ob-altura-ft-row');
+  if (unit === 'ft') {
+    const cm = parseFloat(cmInp.value) || 170;
+    const totalIn = Math.round(cm / 2.54);
+    document.getElementById('ob-altura-ft').value = Math.floor(totalIn / 12);
+    document.getElementById('ob-altura-in').value = totalIn % 12;
+    cmInp.style.display = 'none';
+    ftRow.style.display = 'flex';
+  } else {
+    const ft  = parseFloat(document.getElementById('ob-altura-ft').value) || 5;
+    const inc = parseFloat(document.getElementById('ob-altura-in').value) || 7;
+    cmInp.value = Math.round((ft * 12 + inc) * 2.54);
+    cmInp.style.display = '';
+    ftRow.style.display = 'none';
+  }
 };
 
 window.triggerAvatarCamera = function() {
-  document.getElementById('avatar-input').click();
+  document.getElementById('avatar-input-camera').click();
+};
+
+window.triggerAvatarLibrary = function() {
+  document.getElementById('avatar-input-library').click();
 };
 
 window.handleAvatarPhoto = function(e) {
@@ -148,9 +191,10 @@ window.handleAvatarPhoto = function(e) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    pixelateImage(ev.target.result, 24, pixelData => {
-      ob.avatarData = pixelData;
-      // Show preview in onboarding
+    ob.rawPhotoData = ev.target.result;
+    // Quick pixelated preview during onboarding
+    pixelatePreview(ev.target.result, 16, previewData => {
+      ob.avatarData = previewData;
       const canvas = document.getElementById('avatar-canvas');
       const img    = new Image();
       img.onload = () => {
@@ -162,32 +206,118 @@ window.handleAvatarPhoto = function(e) {
         canvas.classList.remove('hidden');
         document.getElementById('avatar-placeholder').style.display = 'none';
       };
-      img.src = pixelData;
+      img.src = previewData;
     });
   };
   reader.readAsDataURL(file);
 };
 
-function pixelateImage(src, pixelSize, callback) {
+// Quick pixelated preview (mosaic style)
+function pixelatePreview(src, pixelSize, callback) {
   const img = new Image();
   img.onload = () => {
-    // Step 1: shrink to pixelSize × pixelSize
     const small = document.createElement('canvas');
-    small.width  = pixelSize;
-    small.height = pixelSize;
+    small.width = small.height = pixelSize;
     const c1 = small.getContext('2d');
     c1.imageSmoothingEnabled = false;
     c1.drawImage(img, 0, 0, pixelSize, pixelSize);
-
-    // Step 2: scale back up to 96×96
     const large = document.createElement('canvas');
-    large.width  = 96;
-    large.height = 96;
+    large.width = large.height = 96;
     const c2 = large.getContext('2d');
     c2.imageSmoothingEnabled = false;
     c2.drawImage(small, 0, 0, 96, 96);
-
     callback(large.toDataURL());
+  };
+  img.onerror = () => callback(null);
+  img.src = src;
+}
+
+// Generate Pokémon-style pixel character from photo traits + class colors
+function generatePixelCharacter(src, classe, callback) {
+  const img = new Image();
+  img.onload = () => {
+    // Sample colors from photo
+    const S = 32;
+    const sc = document.createElement('canvas');
+    sc.width = sc.height = S;
+    const sctx = sc.getContext('2d');
+    sctx.drawImage(img, 0, 0, S, S);
+    const d = sctx.getImageData(0, 0, S, S).data;
+
+    function avgRgb(x0, y0, x1, y1) {
+      let r=0,g=0,b=0,n=0;
+      for (let y=y0; y<y1; y++) for (let x=x0; x<x1; x++) {
+        const i=(y*S+x)*4;
+        if (d[i+3] < 50) continue;
+        r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++;
+      }
+      return n ? [r/n|0, g/n|0, b/n|0] : [140,100,70];
+    }
+
+    const hair = avgRgb(10, 0, 22, 7);
+    const skin = avgRgb(10, 9, 22, 22);
+    const eye  = avgRgb(11, 10, 16, 14);
+    const dk   = ([r,g,b], f=0.6) => [r*f|0, g*f|0, b*f|0];
+    const md   = ([r,g,b], f=0.82) => [r*f|0, g*f|0, b*f|0];
+
+    // Class outfit colors
+    const OUTFITS = {
+      guerrero: [[190,30,30],[120,12,12]],
+      mago:     [[110,30,210],[65,12,140]],
+      arquero:  [[35,150,60],[18,95,38]],
+      sanador:  [[200,240,225],[140,195,175]],
+    };
+    const [oMain, oDark] = OUTFITS[classe] || OUTFITS.guerrero;
+
+    // Color palette by index
+    const P = {
+      1: hair, 2: skin, 3: eye,
+      4: oMain, 5: oDark,
+      6: [52,36,20],       // boots
+      7: md(skin),         // skin shadow
+      8: [16,8,8],         // outline
+      9: dk(hair),         // hair shadow
+    };
+
+    // 12×20 sprite template
+    const T = [
+      [0,0,0,8,1,1,1,1,8,0,0,0],
+      [0,0,8,1,1,1,1,1,1,8,0,0],
+      [0,8,9,1,1,1,1,1,1,9,8,0],
+      [0,8,2,2,2,2,2,2,2,2,8,0],
+      [0,8,2,3,2,2,2,2,3,2,8,0],
+      [0,8,2,2,2,2,2,2,2,2,8,0],
+      [0,8,2,7,2,2,2,2,7,2,8,0],
+      [0,0,8,2,2,2,2,2,2,8,0,0],
+      [0,0,0,8,2,8,8,2,8,0,0,0],
+      [0,0,0,0,2,2,2,2,0,0,0,0],
+      [0,8,4,4,4,4,4,4,4,4,8,0],
+      [0,4,4,5,4,4,4,4,5,4,4,0],
+      [0,4,4,5,4,4,4,4,5,4,4,0],
+      [0,4,4,4,4,4,4,4,4,4,4,0],
+      [0,0,5,5,0,0,0,0,5,5,0,0],
+      [0,0,5,5,0,0,0,0,5,5,0,0],
+      [0,0,5,5,0,0,0,0,5,5,0,0],
+      [0,0,6,6,0,0,0,0,6,6,0,0],
+      [0,6,6,6,0,0,0,0,6,6,6,0],
+      [0,8,8,8,0,0,0,0,8,8,8,0],
+    ];
+
+    const SCALE = 5; // 60×100 output
+    const out = document.createElement('canvas');
+    out.width = 12 * SCALE; out.height = 20 * SCALE;
+    const octx = out.getContext('2d');
+    octx.imageSmoothingEnabled = false;
+    octx.clearRect(0, 0, out.width, out.height);
+
+    T.forEach((row, ri) => row.forEach((ci, ci2) => {
+      if (!ci) return;
+      const c = P[ci]; if (!c) return;
+      octx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
+      octx.fillRect(ci2 * SCALE, ri * SCALE, SCALE, SCALE);
+    }));
+
+    callback(out.toDataURL());
   };
   img.onerror = () => callback(null);
   img.src = src;
@@ -220,11 +350,20 @@ function obNext(step) {
     if (!ob.nombre || !ob.heroeNombre) { showToast('Enter your name and hero name!'); return; }
   }
   if (step === 2) {
-    ob.peso   = parseFloat(document.getElementById('ob-peso').value)   || 0;
-    ob.altura = parseFloat(document.getElementById('ob-altura').value) || 0;
-    ob.edad   = parseInt(document.getElementById('ob-edad').value)     || 0;
-    ob.sexo   = document.getElementById('ob-sexo').value;
-    if (ob.peso < 30 || ob.altura < 100 || ob.edad < 10) { showToast('Fill in all physical data!'); return; }
+    // Height — convert imperial to cm if needed
+    if (ob.alturaUnit === 'ft') {
+      const ft  = parseFloat(document.getElementById('ob-altura-ft').value) || 0;
+      const inc = parseFloat(document.getElementById('ob-altura-in').value) || 0;
+      ob.altura = Math.round((ft * 12 + inc) * 2.54);
+    } else {
+      ob.altura = parseFloat(document.getElementById('ob-altura').value) || 0;
+    }
+    // Weight — convert lbs to kg if needed
+    const rawPeso = parseFloat(document.getElementById('ob-peso').value) || 0;
+    ob.peso = ob.pesoUnit === 'lbs' ? Math.round(rawPeso / 2.20462) : rawPeso;
+    ob.edad = parseInt(document.getElementById('ob-edad').value) || 0;
+    ob.sexo = document.getElementById('ob-sexo').value;
+    if (ob.peso < 20 || ob.altura < 100 || ob.edad < 10) { showToast('Fill in all physical data!'); return; }
   }
   if (step === 3 && !ob.objetivo)  { showToast('Choose your goal!');           return; }
   if (step === 4 && !ob.actividad) { showToast('Choose your activity level!'); return; }
@@ -288,7 +427,20 @@ function startGame() {
   G.char.hp        = G.char.hpMax;
   G.onboarding     = true;
   saveGame();
-  initMainGame();
+
+  // Generate Pokémon-style pixel character if photo was taken
+  if (ob.rawPhotoData) {
+    generatePixelCharacter(ob.rawPhotoData, ob.clase, charData => {
+      if (charData) {
+        G.profile.avatarData  = charData;
+        G.profile.rawPhotoData = ob.rawPhotoData;
+        saveGame();
+      }
+      initMainGame();
+    });
+  } else {
+    initMainGame();
+  }
 }
 
 // ─── Meta Calculations ───────────────────────────────────────────────────────────
@@ -317,78 +469,89 @@ function initMainGame() {
   document.getElementById('screen-game').classList.add('active');
 
   applyDecay();
-  renderHUD();
-  renderHomeTab();
-  renderLogTab();
+  renderMiniHUD();
+  renderCharacterPage();
   renderFriendsTab();
-  renderShopTab(null);
   renderLibreTab();
+  renderDiscoverFeed();
 
   setInterval(() => {
     applyDecay();
     saveGame();
-    renderHUD();
-    renderHomeChar();
+    renderMiniHUD();
+    renderCharacterPage();
   }, DECAY_INTERVAL);
 
-  showTab('inicio');
-
-  // Start overworld music
+  showPage('main');
   if (window.Music) setTimeout(() => window.Music.play('overworld'), 500);
 }
 
-// ─── Tab Navigation ───────────────────────────────────────────────────────────────
+// ─── Page Navigation ──────────────────────────────────────────────────────────────
 
-function showTab(name) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+const TOP_PAGES = ['main','battle','friends','discover','settings'];
 
-  const contentEl = document.getElementById('tab-' + name);
-  const btnEl     = document.getElementById('tab-btn-' + name);
-  if (contentEl) contentEl.classList.add('active');
-  if (btnEl)     btnEl.classList.add('active');
+window.showPage = function(name) {
+  // Hide all pages
+  document.querySelectorAll('.game-page').forEach(p => p.classList.remove('active'));
+  // Deactivate all nav buttons
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-  if (name === 'inicio')     renderHomeTab();
-  if (name === 'registro')   renderLogTab();
-  if (name === 'world')      { renderFriendsTab(); renderLibreTab(); }
-  if (name === 'menu-main')  renderShopTab(null);
-}
+  // Find the page
+  const pageEl = document.getElementById('page-' + name);
+  if (pageEl) pageEl.classList.add('active');
 
-window.showWorldSub = function(sub) {
-  document.querySelectorAll('.world-sub').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('#tab-world .subnav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('world-sub-' + sub).classList.add('active');
-  document.getElementById('world-btn-' + sub).classList.add('active');
-  if (sub === 'friends') renderFriendsTab();
-  if (sub === 'battle')  renderLibreTab();
+  // Highlight nav button for top-level pages
+  const navBtn = document.getElementById('nav-btn-' + name);
+  if (navBtn) navBtn.classList.add('active');
+
+  // Render content
+  if (name === 'main')             renderCharacterPage();
+  if (name === 'friends')          { renderFriendsTab(); renderLeaderboard(); }
+  if (name === 'discover')         renderDiscoverFeed();
+  if (name === 'battle')           renderLibreTab();
+  if (name === 'settings')         renderSettingsAccount();
+  if (name === 'settings-account') renderSettingsAccount();
+  if (name === 'settings-avatar')  renderSettingsAvatarPage();
+  if (name === 'settings-shop')    renderShopTab(null);
 };
 
-window.showMenuSub = function(sub) {
-  document.querySelectorAll('.menu-sub').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('#tab-menu-main .subnav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('menu-sub-' + sub).classList.add('active');
-  document.getElementById('menu-btn-' + sub).classList.add('active');
-  if (sub === 'shop')    renderShopTab(null);
-  if (sub === 'profile') renderProfileTab();
+window.showBattleSub = function(sub) {
+  document.getElementById('battle-choice-grid').classList.add('hidden');
+  document.querySelectorAll('.battle-sub').forEach(s => s.classList.add('hidden'));
+  const el = document.getElementById('battle-sub-' + sub);
+  if (el) el.classList.remove('hidden');
 };
 
-// ─── HUD ─────────────────────────────────────────────────────────────────────────
+window.hideBattleSub = function() {
+  document.getElementById('battle-choice-grid').classList.remove('hidden');
+  document.querySelectorAll('.battle-sub').forEach(s => s.classList.add('hidden'));
+};
 
-function renderHUD() {
+window.showLeaderboard = function() {
+  renderLeaderboard();
+  document.getElementById('leaderboard-overlay').classList.remove('hidden');
+};
+
+window.hideLeaderboard = function() {
+  document.getElementById('leaderboard-overlay').classList.add('hidden');
+};
+
+// ─── Mini HUD ─────────────────────────────────────────────────────────────────────
+
+function renderMiniHUD() {
   if (!G || !G.profile) return;
   const c = G.char;
 
-  document.getElementById('hud-player-name').textContent = G.profile.heroeNombre.toUpperCase();
-  document.getElementById('hud-level').textContent       = c.nivel;
-  document.getElementById('hud-coins').textContent       = c.monedas;
-  document.getElementById('hud-streak').textContent      = c.racha;
+  document.getElementById('mhud-name').textContent    = G.profile.heroeNombre.toUpperCase();
+  document.getElementById('mhud-level').textContent   = c.nivel;
+  document.getElementById('mhud-coins').textContent   = c.monedas;
+  document.getElementById('mhud-streak').textContent  = c.racha;
 
-  // Avatar in HUD
-  const hudAvatar = document.getElementById('hud-avatar');
+  const mhudAv = document.getElementById('mhud-avatar');
   if (G.profile.avatarData) {
-    hudAvatar.innerHTML = `<img src="${G.profile.avatarData}" alt="avatar">`;
+    mhudAv.innerHTML = `<img src="${G.profile.avatarData}" style="width:32px;height:32px;image-rendering:pixelated">`;
   } else {
-    hudAvatar.innerHTML = `<span class="hud-avatar-emoji">${CLASS_SPRITE[G.profile.clase]}</span>`;
+    mhudAv.innerHTML = `<span style="font-size:22px">${CLASS_SPRITE[G.profile.clase]}</span>`;
   }
 
   // HP bar
@@ -398,138 +561,76 @@ function renderHUD() {
   hpBar.style.background = hpPct > 0.5 ? 'var(--hp-green)' : hpPct > 0.25 ? 'var(--hp-yellow)' : 'var(--hp-red)';
   document.getElementById('val-hp').textContent = c.hp + '/' + c.hpMax;
 
-  // Hunger
-  const hPct     = c.hambre;
-  const hungerBar = document.getElementById('bar-hunger');
-  hungerBar.style.width      = hPct + '%';
-  hungerBar.style.background = hPct > 50 ? 'var(--hunger-full)' : hPct > 25 ? 'var(--hp-yellow)' : 'var(--hp-red)';
-  document.getElementById('val-hunger').textContent = Math.round(hPct) + '%';
-
-  // Thirst
-  const sPct     = c.sed;
-  const thirstBar = document.getElementById('bar-thirst');
-  thirstBar.style.width      = sPct + '%';
-  thirstBar.style.background = sPct > 50 ? 'var(--thirst-full)' : sPct > 25 ? 'var(--hp-yellow)' : 'var(--hp-red)';
-  document.getElementById('val-thirst').textContent = Math.round(sPct) + '%';
-
-  // XP
+  // XP bar
   const xpPct = c.exp / c.expNext;
   document.getElementById('bar-xp').style.width = (xpPct * 100) + '%';
   document.getElementById('val-xp').textContent = c.exp + '/' + c.expNext;
-
-  // Daily progress
-  const today = todayRegistros();
-  const cal   = today.reduce((s,r) => s + r.calorias, 0);
-  const agua  = today.reduce((s,r) => s + (r.agua||0), 0);
-  document.getElementById('hud-meta-cal').textContent  = `🍽️ ${cal}/${G.profile.calorias} cal`;
-  document.getElementById('hud-meta-agua').textContent = `💧 ${agua}/${G.profile.aguaMl} ml`;
-
-  // Alerts
-  const alerts = document.getElementById('hud-alerts');
-  alerts.innerHTML = '';
-  if (c.hambre < 30) alerts.innerHTML += `<span class="hud-alert hunger">HUNGRY!</span>`;
-  if (c.sed    < 30) alerts.innerHTML += `<span class="hud-alert thirst">THIRSTY!</span>`;
-  if (c.hp < c.hpMax * 0.25) alerts.innerHTML += `<span class="hud-alert weak">WEAKENED!</span>`;
 }
 
-// ─── HOME TAB ─────────────────────────────────────────────────────────────────────
+// ─── Character Page ────────────────────────────────────────────────────────────────
 
-function renderHomeTab() {
+function renderCharacterPage() {
   if (!G || !G.profile) return;
-  renderHomeChar();
-  renderHouseItems();
-  renderStatGrid();
+  const c = G.char;
+
+  // Big character display
+  const disp = document.getElementById('char-display');
+  if (G.profile.avatarData) {
+    disp.innerHTML = `<img src="${G.profile.avatarData}" class="char-big-img" alt="character">`;
+  } else {
+    disp.innerHTML = `<div class="char-big-emoji">${CLASS_SPRITE[G.profile.clase]}</div>`;
+  }
+
+  document.getElementById('char-hero-name').textContent  = G.profile.heroeNombre.toUpperCase();
+  document.getElementById('char-class-tag').textContent  = (CLASS_NAME_EN[G.profile.clase]||'').toUpperCase();
+
+  // Mood
+  let mood = '😊';
+  if (c.hambre < 20 && c.sed < 20) mood = '😵';
+  else if (c.hambre < 30)           mood = '😩';
+  else if (c.sed < 30)              mood = '😰';
+  else if (c.hp < c.hpMax * 0.25)  mood = '😤';
+  else if (c.hambre > 70 && c.sed > 70 && c.hp > c.hpMax * 0.7) mood = '😄';
+  document.getElementById('char-mood').textContent = mood;
+
+  // Stats strip
+  document.getElementById('char-stats-strip').innerHTML = `
+    <span>⚔️ ${c.ataque}</span>
+    <span>🛡️ ${c.defensa}</span>
+    <span>⚡ ${c.agilidad}</span>
+    <span>💪 ${c.fuerza}</span>
+    <span>🪙 ${c.monedas}</span>
+  `;
+
   renderDailyGoals();
   renderBattleHistoryMini();
 }
 
-function renderHomeChar() {
-  if (!G || !G.profile) return;
-  const c  = G.char;
-  const el = document.getElementById('char-in-house');
+// Old renderHUD stub for battle.js compatibility
+function renderHUD() { renderMiniHUD(); }
 
-  let mood = '😊';
-  if (c.hambre < 20 && c.sed < 20) mood = '😵';
-  else if (c.hambre < 30)          mood = '😩';
-  else if (c.sed < 30)             mood = '😰';
-  else if (c.hp < c.hpMax * 0.25) mood = '😤';
-  else if (c.hambre > 70 && c.sed > 70 && c.hp > c.hpMax * 0.7) mood = '😄';
+function renderHomeTab() { renderCharacterPage(); }
+function renderHomeChar() { renderCharacterPage(); }
 
-  if (G.profile.avatarData) {
-    el.innerHTML = `
-      <div style="position:relative;display:inline-block">
-        <img src="${G.profile.avatarData}" style="width:56px;height:56px;image-rendering:pixelated;image-rendering:crisp-edges;display:block;">
-        <div style="font-size:16px;position:absolute;bottom:-8px;right:-6px">${mood}</div>
-      </div>`;
-  } else {
-    el.innerHTML = `<div style="font-size:52px;line-height:1">${CLASS_SPRITE[G.profile.clase]}</div><div style="font-size:18px;margin-top:-6px">${mood}</div>`;
-  }
+function renderHouseItems() {} // no-op (house removed)
 
-  const speech = document.getElementById('house-speech');
-  let msg = '';
-  if (c.hambre < 25)             msg = "I'm so hungry! 🍗";
-  else if (c.sed < 25)           msg = 'I need water! 💧';
-  else if (c.hp < c.hpMax * 0.3) msg = "I feel weakened...";
-  else if (c.nivel >= 5)         msg = 'I am very powerful! ⚡';
-  else                           msg = 'Take good care of me!';
 
-  speech.textContent = msg;
-  speech.classList.add('visible');
-  setTimeout(() => speech.classList.remove('visible'), 4000);
-}
-
-function renderHouseItems() {
-  const container = document.getElementById('house-items');
-  container.innerHTML = '';
-  G.char.casaItems.forEach(itemId => {
-    const item = CATALOGO.find(i => i.id === itemId);
-    if (item) {
-      const d = document.createElement('div');
-      d.className = 'house-item';
-      d.textContent = item.emoji;
-      d.title = item.nombre;
-      container.appendChild(d);
-    }
-  });
-}
-
-function renderStatGrid() {
-  const c  = G.char;
-  const el = document.getElementById('stat-grid');
-  const stats = [
-    { label:'⚔️ ATTACK',   value: c.ataque,   bar: c.ataque  / 50, color:'var(--red)'      },
-    { label:'🛡️ DEFENSE',  value: c.defensa,  bar: c.defensa / 50, color:'var(--blue)'     },
-    { label:'⚡ AGILITY',  value: c.agilidad, bar: c.agilidad/ 50, color:'var(--green)'    },
-    { label:'💪 STRENGTH', value: c.fuerza,   bar: c.fuerza  / 50, color:'var(--gold)'     },
-    { label:'❤️ HP',        value: c.hp+'/'+c.hpMax, bar: c.hp/c.hpMax, color:'var(--hp-green)'   },
-    { label:'⚡ POWER',    value: c.ataque+c.defensa+c.agilidad+c.fuerza, bar:(c.ataque+c.defensa+c.agilidad+c.fuerza)/200, color:'var(--purple)' },
-  ];
-  el.innerHTML = stats.map(s => `
-    <div class="stat-item">
-      <div class="stat-item-label">${s.label}</div>
-      <div class="stat-item-value">${s.value}</div>
-      <div class="stat-item-bar">
-        <div class="bar-track">
-          <div class="bar-fill" style="width:${Math.min(100,s.bar*100)}%;background:${s.color}"></div>
-        </div>
-      </div>
-    </div>`).join('');
-}
+// ─── HOME TAB (redirects to character page) ────────────────────────────────────────
 
 function renderDailyGoals() {
-  if (!G.profile) return;
-  const today  = todayRegistros();
-  const cal    = today.reduce((s,r) => s + r.calorias, 0);
-  const prot   = today.reduce((s,r) => s + (r.proteinas||0), 0);
-  const agua   = today.reduce((s,r) => s + (r.agua||0), 0);
-  const calPct = Math.min(1, cal  / G.profile.calorias);
-  const proPct = Math.min(1, prot / G.profile.proteina);
-  const aguPct = Math.min(1, agua / G.profile.aguaMl);
-
-  document.getElementById('daily-goals').innerHTML = `
-    ${goalRow('🍽️ Calories', calPct, `${cal}/${G.profile.calorias} kcal`)}
-    ${goalRow('🥩 Protein',  proPct, `${Math.round(prot)}/${G.profile.proteina}g`)}
-    ${goalRow('💧 Water',    aguPct, `${agua}/${G.profile.aguaMl}ml`)}
+  const el = document.getElementById('daily-goals');
+  if (!el || !G || !G.profile) return;
+  // Show achievement count for today
+  const todayAch = (G.achievements || []).filter(a => {
+    const d = new Date(a.fecha); d.setHours(0,0,0,0);
+    const t = new Date(); t.setHours(0,0,0,0);
+    return d.getTime() === t.getTime();
+  });
+  const totalCoinsToday = todayAch.reduce((s,a) => s + a.coins, 0);
+  el.innerHTML = `
+    <div class="goal-row"><span>🌟 Today's achievements</span><strong>${todayAch.length}</strong></div>
+    <div class="goal-row"><span>🪙 Coins earned today</span><strong>+${totalCoinsToday}</strong></div>
+    <div class="goal-row"><span>🏆 Total battles won</span><strong>${G.char.ganadasTotal}</strong></div>
   `;
 }
 
@@ -556,125 +657,276 @@ function renderBattleHistoryMini() {
     </div>`).join('');
 }
 
-// ─── LOG TAB ─────────────────────────────────────────────────────────────────────
+// ─── Achievement / Earn Coins System ─────────────────────────────────────────────
 
-let pendingPhotoData = null;
+let earnPhotoData = null;
 
-function triggerCamera() { document.getElementById('camera-input').click(); }
+window.triggerEarnCamera = function() { document.getElementById('earn-input-camera').click(); };
+window.triggerEarnLibrary = function() { document.getElementById('earn-input-library').click(); };
 
-function handlePhoto(e) {
+window.handleEarnPhoto = function(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    pendingPhotoData = ev.target.result;
-    const img = document.getElementById('food-photo');
-    img.src = pendingPhotoData;
-    img.classList.remove('hidden');
-    document.getElementById('photo-preview-inner').classList.add('hidden');
+    earnPhotoData = ev.target.result;
+    const prev = document.getElementById('earn-preview');
+    prev.src = earnPhotoData;
+    prev.classList.remove('hidden');
   };
   reader.readAsDataURL(file);
-}
+};
 
-function registrarAlimento() {
-  const tipo  = document.getElementById('food-type').value;
-  const desc  = document.getElementById('food-desc').value.trim();
-  const cal   = parseInt(document.getElementById('food-cal').value)    || 0;
-  const prot  = parseFloat(document.getElementById('food-prot').value) || 0;
-  const carbs = parseFloat(document.getElementById('food-carbs').value)|| 0;
-  const agua  = parseInt(document.getElementById('food-agua').value)   || 0;
+// Points awarded per category
+const EARN_POINTS = {
+  sport: { coins: 80, xp: 60, label: '🏆 Sport' },
+  healthy_food: { coins: 30, xp: 25, label: '🥗 Healthy Eating' },
+  workout: { coins: 50, xp: 40, label: '💪 Workout' },
+  adventure: { coins: 70, xp: 55, label: '🌍 Adventure' },
+  social: { coins: 25, xp: 20, label: '🎉 Social' },
+  skill: { coins: 45, xp: 35, label: '🎨 Skill' },
+  other: { coins: 20, xp: 15, label: '⚡ Activity' },
+};
 
-  if (!desc) { showToast('Describe what you ate or drank!'); return; }
+window.submitAchievement = function() {
+  const type = document.getElementById('earn-type').value;
+  const desc = document.getElementById('earn-desc').value.trim();
+  if (!desc) { showToast('Describe your achievement!'); return; }
 
-  const calPct = G.profile ? cal / G.profile.calorias : 0.1;
-  const hambre = tipo === 'agua' ? 0 : Math.min(40, calPct * 70);
-  const sed    = Math.min(35, (agua / 500) * 45) + (tipo === 'bebida' ? 5 : 0) + (tipo === 'agua' ? 40 : 0);
-  const hpGain = Math.round(hambre / 6) + Math.round(prot / 8);
-  const expGain= Math.round(calPct * 25) + Math.round(prot / 4) + (agua > 200 ? 8 : 0);
-  const monedas= (tipo === 'agua' ? 4 : cal > 0 ? 3 : 1) + (prot > 20 ? 4 : 0);
+  const pts = EARN_POINTS[type] || EARN_POINTS.other;
+  // Bonus if photo attached
+  const photoBonus = earnPhotoData ? Math.round(pts.coins * 0.3) : 0;
+  const totalCoins = pts.coins + photoBonus;
+  const totalXP    = pts.xp + (earnPhotoData ? Math.round(pts.xp * 0.3) : 0);
 
-  const reg = {
-    id: Date.now(), fecha: Date.now(),
-    tipo, desc, calorias: cal, proteinas: prot,
-    carbohidratos: carbs, agua, foto: pendingPhotoData,
-    hambreImpact: hambre, sedImpact: sed,
-    hpGain, expGain, monedas,
+  // Apply rewards
+  G.char.monedas += totalCoins;
+  G.char.exp     += totalXP;
+  G.char.hp       = Math.min(G.char.hpMax, G.char.hp + 5);
+  G.char.racha    = Math.max(0, G.char.racha);
+
+  // Save achievement to feed
+  const achievement = {
+    id: Date.now(),
+    user: G.profile ? G.profile.nombre : 'Player',
+    heroName: G.profile ? G.profile.heroeNombre : 'Hero',
+    clase: G.profile ? G.profile.clase : 'guerrero',
+    avatarData: G.profile ? G.profile.avatarData : null,
+    type, category: pts.label,
+    desc, photo: earnPhotoData,
+    coins: totalCoins, xp: totalXP,
+    fecha: Date.now(),
   };
 
-  G.registros.unshift(reg);
-  G.char.hambre   = Math.min(100, G.char.hambre + hambre);
-  G.char.sed      = Math.min(100, G.char.sed    + sed);
-  G.char.hp       = Math.min(G.char.hpMax, G.char.hp + hpGain);
-  G.char.exp     += expGain;
-  G.char.monedas += monedas;
+  // Store in achievements list
+  if (!G.achievements) G.achievements = [];
+  G.achievements.unshift(achievement);
+
+  // Also add to global discover feed (localStorage)
+  try {
+    const feed = JSON.parse(localStorage.getItem('hv_discover_feed') || '[]');
+    feed.unshift(achievement);
+    if (feed.length > 50) feed.length = 50;
+    localStorage.setItem('hv_discover_feed', JSON.stringify(feed));
+  } catch(e) {}
 
   checkLevelUp();
-  checkDailyGoal();
   saveGame();
-  renderHUD();
-  renderLogTab();
-  renderHomeChar();
+  renderMiniHUD();
+  renderCharacterPage();
+  renderDiscoverFeed();
 
   // Reset form
-  ['food-desc','food-cal','food-prot','food-carbs','food-agua'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  pendingPhotoData = null;
-  document.getElementById('food-photo').classList.add('hidden');
-  document.getElementById('photo-preview-inner').classList.remove('hidden');
-  document.getElementById('camera-input').value = '';
+  document.getElementById('earn-desc').value = '';
+  document.getElementById('earn-preview').classList.add('hidden');
+  earnPhotoData = null;
+  document.getElementById('earn-input-camera').value = '';
+  document.getElementById('earn-input-library').value = '';
 
-  showToast(`+${expGain} EXP | +${monedas} 🪙 | ${hpGain > 0 ? '+' + hpGain + ' HP' : ''}`);
-}
+  showModal(`
+    <span style="font-size:40px">🌟</span>
+    <h2 style="color:var(--gold);margin:12px 0">ACHIEVEMENT LOGGED!</h2>
+    <div style="line-height:2.4;margin:8px 0">
+      ${pts.label}<br>
+      +${totalCoins} 🪙 coins<br>
+      +${totalXP} ⚡ EXP<br>
+      ${photoBonus > 0 ? `<span style="color:var(--green)">📸 Photo bonus included!</span>` : ''}
+    </div>
+    <div style="font-size:7px;color:var(--gray)">Keep living cool — the world is watching!</div>
+  `);
 
-function renderLogTab() {
-  if (!G || !G.profile) return;
-  const today = todayRegistros();
-  const cal   = today.reduce((s,r) => s + r.calorias, 0);
-  const prot  = today.reduce((s,r) => s + (r.proteinas||0), 0);
-  const carbs = today.reduce((s,r) => s + (r.carbohidratos||0), 0);
-  const agua  = today.reduce((s,r) => s + (r.agua||0), 0);
+  hideBattleSub();
+};
 
-  document.getElementById('log-totals').innerHTML = `
-    <div class="total-box"><div class="total-box-label">CALORIES</div><div class="total-box-val">${cal}</div><div class="total-box-goal">/${G.profile.calorias}</div></div>
-    <div class="total-box"><div class="total-box-label">PROTEIN</div><div class="total-box-val">${Math.round(prot)}g</div><div class="total-box-goal">/${G.profile.proteina}g</div></div>
-    <div class="total-box"><div class="total-box-label">CARBS</div><div class="total-box-val">${Math.round(carbs)}g</div></div>
-    <div class="total-box"><div class="total-box-label">WATER</div><div class="total-box-val">${agua}ml</div><div class="total-box-goal">/${G.profile.aguaMl}</div></div>
-  `;
+// ─── Discover Feed ────────────────────────────────────────────────────────────────
 
-  const listEl = document.getElementById('log-list');
-  if (!today.length) { listEl.innerHTML = '<div class="empty-state">No logs today. Start eating!</div>'; return; }
-  listEl.innerHTML = today.map(r => {
-    const emoji = { comida:'🍽️', agua:'💧', bebida:'🥤', snack:'🍎', suplemento:'💊' }[r.tipo] || '🍽️';
-    return `<div class="log-item">
-      ${r.foto
-        ? `<img class="log-item-photo" src="${r.foto}" alt="food">`
-        : `<div class="log-item-photo-placeholder">${emoji}</div>`
-      }
-      <div class="log-item-info">
-        <div class="log-item-name">${r.desc}</div>
-        <div class="log-item-meta">
-          ${r.calorias>0?r.calorias+' kcal | ':''}
-          ${r.proteinas>0?r.proteinas+'g protein | ':''}
-          ${r.agua>0?r.agua+'ml water':''}
+function renderDiscoverFeed() {
+  const el = document.getElementById('discover-feed');
+  if (!el) return;
+  let feed = [];
+  try { feed = JSON.parse(localStorage.getItem('hv_discover_feed') || '[]'); } catch(e) {}
+
+  if (!feed.length) {
+    el.innerHTML = '<div class="empty-state">No achievements yet.<br>Be the first to post!</div>';
+    return;
+  }
+
+  el.innerHTML = feed.map(a => {
+    const timeAgo = formatTimeAgo(a.fecha);
+    return `
+    <div class="feed-card">
+      <div class="feed-card-header">
+        <div class="feed-avatar">
+          ${a.avatarData
+            ? `<img src="${a.avatarData}" style="width:36px;height:36px;image-rendering:pixelated">`
+            : `<span style="font-size:22px">${CLASS_SPRITE[a.clase]||'⚔️'}</span>`}
         </div>
-        <div class="log-item-gains">
-          ${r.hpGain>0?`<span class="log-gain-hp">+${r.hpGain} HP</span>`:''}
-          <span class="log-gain-xp">+${r.expGain} EXP</span>
-          <span class="log-gain-coin">+${r.monedas} 🪙</span>
+        <div class="feed-user-info">
+          <div class="feed-username">${a.heroName || a.user}</div>
+          <div class="feed-meta">${a.category} · ${timeAgo}</div>
         </div>
+        <div class="feed-coins">+${a.coins} 🪙</div>
       </div>
+      <div class="feed-desc">${a.desc}</div>
+      ${a.photo ? `<img class="feed-photo" src="${a.photo}" alt="achievement">` : ''}
     </div>`;
   }).join('');
 }
 
-function todayRegistros() {
-  const today = new Date(); today.setHours(0,0,0,0);
-  return G.registros.filter(r => {
-    const d = new Date(r.fecha); d.setHours(0,0,0,0);
-    return d.getTime() === today.getTime();
-  });
+function formatTimeAgo(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60000)   return 'just now';
+  if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+  return Math.floor(diff/86400000) + 'd ago';
 }
+
+// ─── Leaderboard ─────────────────────────────────────────────────────────────────
+
+function renderLeaderboard() {
+  const el = document.getElementById('leaderboard-list');
+  if (!el) return;
+
+  // Collect all known accounts from localStorage
+  const accounts = [];
+  try {
+    const accs = JSON.parse(localStorage.getItem('hv_accounts') || '{}');
+    Object.values(accs).forEach(acc => {
+      const saveKey = 'heroeVital_v1_' + acc.displayName;
+      const altKey  = 'heroeVital_v1';
+      let save = null;
+      try { save = JSON.parse(localStorage.getItem(saveKey)); } catch(e) {}
+      if (!save) try { save = JSON.parse(localStorage.getItem(altKey)); } catch(e) {}
+      if (save && save.profile) {
+        accounts.push({
+          username: acc.displayName,
+          heroName: save.profile.heroeNombre || acc.displayName,
+          clase: save.profile.clase || 'guerrero',
+          nivel: save.char ? save.char.nivel : 1,
+          monedas: save.char ? save.char.monedas : 0,
+          wins: save.char ? save.char.ganadasTotal : 0,
+          avatarData: save.profile.avatarData || null,
+          achievements: (save.achievements || []).length,
+        });
+      }
+    });
+  } catch(e) {}
+
+  // Sort by nivel then coins
+  accounts.sort((a,b) => b.nivel !== a.nivel ? b.nivel - a.nivel : b.monedas - a.monedas);
+
+  if (!accounts.length) {
+    el.innerHTML = '<div class="empty-state">No players yet.<br>Be the first!</div>';
+    return;
+  }
+
+  const medals = ['🥇','🥈','🥉'];
+  el.innerHTML = accounts.map((a, i) => `
+    <div class="leaderboard-card ${i < 3 ? 'lb-top-'+i : ''}">
+      <div class="lb-rank">${medals[i] || '#'+(i+1)}</div>
+      <div class="lb-avatar">
+        ${a.avatarData
+          ? `<img src="${a.avatarData}" style="width:40px;height:40px;image-rendering:pixelated">`
+          : `<span style="font-size:26px">${CLASS_SPRITE[a.clase]||'⚔️'}</span>`}
+      </div>
+      <div class="lb-info">
+        <div class="lb-name">${a.heroName}</div>
+        <div class="lb-stats">LV.${a.nivel} | 🪙 ${a.monedas} | 🏆 ${a.wins} wins</div>
+      </div>
+      <div class="lb-badge">⭐×${a.achievements}</div>
+    </div>`).join('');
+}
+
+// ─── Settings Renders ─────────────────────────────────────────────────────────────
+
+function renderSettingsAccount() {
+  const el = document.getElementById('settings-account-content');
+  if (!el || !window.currentUser) return;
+  el.innerHTML = `
+    <div class="panel" style="max-width:400px;margin:12px auto">
+      <div class="panel-title">👤 YOUR ACCOUNT</div>
+      <div class="profile-row"><span>USERNAME</span><strong>${window.currentUser.displayName}</strong></div>
+      <div class="profile-row"><span>EMAIL</span><strong>${window.currentUser.email || 'Not linked'}</strong></div>
+      <div class="profile-row"><span>ONLINE ID</span><strong style="font-size:7px;color:var(--blue)">${window.currentUser.peerId || '—'}</strong></div>
+      <hr class="panel-divider">
+      <div class="panel-title">📊 HERO STATS</div>
+      ${G && G.profile ? `
+        <div class="profile-row"><span>HERO</span><strong>${G.profile.heroeNombre}</strong></div>
+        <div class="profile-row"><span>CLASS</span><strong>${(CLASS_NAME_EN[G.profile.clase]||'').toUpperCase()}</strong></div>
+        <div class="profile-row"><span>LEVEL</span><strong>${G.char.nivel}</strong></div>
+        <div class="profile-row"><span>COINS</span><strong>🪙 ${G.char.monedas}</strong></div>
+        <div class="profile-row"><span>WINS</span><strong>🏆 ${G.char.ganadasTotal}</strong></div>
+        <div class="profile-row"><span>STREAK</span><strong>🔥 ${G.char.racha} days</strong></div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderSettingsAvatarPage() {
+  const el = document.getElementById('settings-avatar-preview');
+  if (!el || !G || !G.profile) return;
+  if (G.profile.avatarData) {
+    el.innerHTML = `<img src="${G.profile.avatarData}" class="settings-avatar-img" alt="avatar">`;
+  } else {
+    el.innerHTML = `<div style="font-size:72px">${CLASS_SPRITE[G.profile.clase]}</div>`;
+  }
+}
+
+window.triggerSettingsCamera = function() { document.getElementById('settings-avatar-camera').click(); };
+window.triggerSettingsLibrary = function() { document.getElementById('settings-avatar-library').click(); };
+
+window.handleSettingsAvatarPhoto = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const rawData = ev.target.result;
+    generatePixelCharacter(rawData, G.profile.clase, charData => {
+      if (charData) {
+        G.profile.avatarData   = charData;
+        G.profile.rawPhotoData = rawData;
+        saveGame();
+        renderSettingsAvatarPage();
+        renderMiniHUD();
+        renderCharacterPage();
+        showToast('Avatar updated!');
+      }
+    });
+  };
+  reader.readAsDataURL(file);
+};
+
+window.toggleMusic = function() {
+  if (window.Music) {
+    const on = window.Music.toggle();
+    const btn = document.getElementById('music-toggle-btn');
+    if (btn) btn.textContent = on ? 'ON' : 'OFF';
+  }
+};
+
+window.logoutGame = function() {
+  if (window.logoutUser) window.logoutUser();
+};
 
 // ─── Level Up ─────────────────────────────────────────────────────────────────────
 
@@ -691,9 +943,9 @@ function checkLevelUp() {
     G.char.fuerza  += 2;
     G.char.monedas += 30;
     showModal(`
-      <span class="big-emoji">🌟</span>
-      <h2>LEVEL UP!</h2>
-      <div style="color:var(--gold);font-size:18px;margin:12px 0">LEVEL ${G.char.nivel}</div>
+      <span style="font-size:40px">🌟</span>
+      <h2 style="color:var(--gold);margin:12px 0">LEVEL UP!</h2>
+      <div style="color:var(--gold);font-size:18px;margin:8px 0">LEVEL ${G.char.nivel}</div>
       <div style="line-height:2.5">
         ⚔️ ATK +2 | 🛡️ DEF +2<br>
         ⚡ AGI +1 | 💪 STR +2<br>
@@ -703,31 +955,17 @@ function checkLevelUp() {
   }
 }
 
-function checkDailyGoal() {
-  if (!G.profile) return;
+function todayRegistros() {
+  if (!G) return [];
   const today = new Date(); today.setHours(0,0,0,0);
-  if (G.char.ultimoDiaMeta) {
-    const last = new Date(G.char.ultimoDiaMeta); last.setHours(0,0,0,0);
-    if (last.getTime() === today.getTime()) return;
-  }
-  const todayRegs = todayRegistros();
-  const cal  = todayRegs.reduce((s,r) => s + r.calorias, 0);
-  const prot = todayRegs.reduce((s,r) => s + (r.proteinas||0), 0);
-  const agua = todayRegs.reduce((s,r) => s + (r.agua||0), 0);
-  const met  =
-    (cal  / G.profile.calorias >= 0.9 ? 1 : 0) +
-    (prot / G.profile.proteina >= 0.9 ? 1 : 0) +
-    (agua / G.profile.aguaMl   >= 0.9 ? 1 : 0);
-
-  if (met >= 2) {
-    const bonus = 10 + met * 5;
-    G.char.monedas += bonus;
-    G.char.racha++;
-    G.char.mejorRacha = Math.max(G.char.mejorRacha, G.char.racha);
-    G.char.ultimoDiaMeta = Date.now();
-    showToast(`🎉 ${met}/3 goals met! +${bonus} 🪙 | Streak: ${G.char.racha} days`);
-  }
+  return (G.registros || []).filter(r => {
+    const d = new Date(r.fecha); d.setHours(0,0,0,0);
+    return d.getTime() === today.getTime();
+  });
 }
+
+function checkDailyGoal() { /* no-op — replaced by achievement system */ }
+
 
 // ─── FRIENDS TAB ─────────────────────────────────────────────────────────────────
 
@@ -870,68 +1108,17 @@ function comprarItem(id) {
   }
 
   saveGame();
-  renderHUD();
+  renderMiniHUD();
   renderShopTab(null);
-  renderHouseItems();
   showToast(`${item.emoji} ${item.nombre} purchased!`);
-}
-
-// ─── PROFILE TAB ─────────────────────────────────────────────────────────────────
-
-function renderProfileTab() {
-  if (!G || !window.currentUser) return;
-  const el = document.getElementById('profile-content');
-  el.innerHTML = `
-    <div class="profile-panel panel">
-      <div class="panel-title">👤 PROFILE</div>
-      <div class="profile-avatar">
-        ${G.profile.avatarData
-          ? `<img src="${G.profile.avatarData}" class="pixel-avatar-display" alt="avatar">`
-          : `<div class="avatar-no-photo">${CLASS_SPRITE[G.profile.clase]}</div>`
-        }
-      </div>
-      <div class="profile-info">
-        <div class="profile-row"><span>PLAYER</span><strong>${G.profile.nombre}</strong></div>
-        <div class="profile-row"><span>HERO</span><strong>${G.profile.heroeNombre}</strong></div>
-        <div class="profile-row"><span>CLASS</span><strong>${(CLASS_NAME_EN[G.profile.clase]||G.profile.clase).toUpperCase()}</strong></div>
-        <div class="profile-row"><span>LEVEL</span><strong>${G.char.nivel}</strong></div>
-        <div class="profile-row"><span>ACCOUNT</span><strong>${window.currentUser.displayName}</strong></div>
-        ${window.currentUser.email ? `<div class="profile-row"><span>EMAIL</span><strong>${window.currentUser.email}</strong></div>` : ''}
-        <div class="profile-row"><span>ONLINE ID</span><strong style="font-size:7px;color:var(--blue)">${window.currentUser.peerId}</strong></div>
-      </div>
-      <hr class="panel-divider">
-      <div class="panel-title">📊 BATTLE STATS</div>
-      <div class="battle-stats-box">
-        <div><strong>${G.char.ganadasTotal}</strong> wins</div>
-        <div><strong>${G.char.perdidasTotal}</strong> losses</div>
-        <div><strong>${G.char.racha}</strong> day streak (best: ${G.char.mejorRacha})</div>
-        <div><strong>${G.char.monedas}</strong> 🪙 coins</div>
-      </div>
-      <hr class="panel-divider">
-      <div class="panel-title">🔊 MUSIC</div>
-      <button class="btn-secondary btn-full" id="music-toggle-btn" onclick="if(window.Music){window.Music.toggle();this.textContent=window.Music.isPlaying()?'🔊 MUSIC: ON':'🔇 MUSIC: OFF'}">🔇 MUSIC: OFF</button>
-      <hr class="panel-divider">
-      <button class="btn-red btn-sm btn-full" onclick="logoutUser()">🚪 LOG OUT</button>
-    </div>
-  `;
-  // Update music button state
-  const btn = document.getElementById('music-toggle-btn');
-  if (btn && window.Music) btn.textContent = window.Music.isPlaying() ? '🔊 MUSIC: ON' : '🔇 MUSIC: OFF';
 }
 
 // ─── LIBRE TAB ────────────────────────────────────────────────────────────────────
 
 function renderLibreTab() {
   if (!G || !G.profile) return;
-  const c = G.char;
-
-  document.getElementById('libre-my-char').innerHTML = `
-    <div style="font-size:34px">${CLASS_SPRITE[G.profile.clase]}</div>
-    <div style="font-size:8px;color:var(--gold);margin-top:6px">${G.profile.heroeNombre}</div>
-    <div style="font-size:7px;color:var(--gray)">LV.${c.nivel} | ⚡ ${c.ataque+c.defensa+c.agilidad+c.fuerza} POWER</div>
-  `;
-
   const list = document.getElementById('opponents-list');
+  if (!list) return;
   list.innerHTML = CPU_OPPONENTS.map(op => `
     <div class="opponent-card">
       <div class="opponent-sprite">${CLASS_SPRITE[op.clase]}</div>
@@ -1028,7 +1215,7 @@ function onBattleEnd(resultado, enemy, monedasGanadas, monedasPerdidas) {
   });
 
   saveGame();
-  renderHUD();
+  renderMiniHUD();
   renderBattleHistoryMini();
   renderFriendsTab();
 }

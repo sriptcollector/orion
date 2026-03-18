@@ -67,11 +67,13 @@
               </div>
             </div>
             <div class="avatar-btns">
-              <button class="btn-secondary btn-sm" onclick="triggerAvatarCamera()">📷 TAKE SELFIE</button>
-              <div style="font-size:6px;color:var(--gray);margin-top:6px;line-height:1.8">Your face becomes<br>a pixel art avatar!</div>
+              <button class="btn-secondary btn-sm" onclick="triggerAvatarCamera()">📷 TAKE PHOTO</button>
+              <button class="btn-secondary btn-sm" style="margin-top:6px" onclick="triggerAvatarLibrary()">🖼️ FROM LIBRARY</button>
+              <div style="font-size:6px;color:var(--gray);margin-top:6px;line-height:1.8">Your face becomes<br>a pixel hero!</div>
             </div>
           </div>
-          <input type="file" id="avatar-input" accept="image/*" capture="user" style="display:none" onchange="handleAvatarPhoto(event)">
+          <input type="file" id="avatar-input-camera" accept="image/*" capture="user" style="display:none" onchange="handleAvatarPhoto(event)">
+          <input type="file" id="avatar-input-library" accept="image/*" style="display:none" onchange="handleAvatarPhoto(event)">
         </div>
       </div>
       <button class="btn-primary" onclick="obNext(1)">BEGIN →</button>
@@ -82,12 +84,28 @@
       <h2 class="ob-title-sm">📊 PHYSICAL DATA</h2>
       <div class="ob-form ob-grid2">
         <div>
-          <label>WEIGHT (kg)</label>
-          <input id="ob-peso" type="number" placeholder="70" min="30" max="300">
+          <div class="label-unit-row">
+            <label>WEIGHT</label>
+            <div class="unit-toggle">
+              <button class="unit-btn active" onclick="setWeightUnit('kg',this)">kg</button>
+              <button class="unit-btn" onclick="setWeightUnit('lbs',this)">lbs</button>
+            </div>
+          </div>
+          <input id="ob-peso" type="number" placeholder="70" min="1" max="700">
         </div>
         <div>
-          <label>HEIGHT (cm)</label>
-          <input id="ob-altura" type="number" placeholder="170" min="100" max="250">
+          <div class="label-unit-row">
+            <label>HEIGHT</label>
+            <div class="unit-toggle">
+              <button class="unit-btn active" onclick="setHeightUnit('cm',this)">cm</button>
+              <button class="unit-btn" onclick="setHeightUnit('ft',this)">ft·in</button>
+            </div>
+          </div>
+          <input id="ob-altura" type="number" placeholder="170" min="50" max="280">
+          <div id="ob-altura-ft-row" class="ft-in-row" style="display:none">
+            <input id="ob-altura-ft" type="number" placeholder="ft" min="3" max="8">
+            <input id="ob-altura-in" type="number" placeholder="in" min="0" max="11">
+          </div>
         </div>
         <div>
           <label>AGE</label>
@@ -231,265 +249,302 @@
 <!-- ═══════════════════════════════════ MAIN GAME ══════════════════════════════════ -->
 <div id="screen-game" class="screen">
 
-  <!-- HUD -->
-  <div id="hud">
-    <div class="hud-left">
-      <div class="hud-name">
-        <div class="hud-avatar" id="hud-avatar"></div>
-        <span id="hud-player-name">HERO</span>
-        <span class="hud-badge">LV</span>
-        <span id="hud-level">1</span>
-      </div>
-      <div class="hud-bars">
-        <div class="hud-bar-row">
-          <span class="bar-label">❤️</span>
-          <div class="bar-track"><div class="bar-fill hp-fill" id="bar-hp"></div></div>
-          <span class="bar-val" id="val-hp">100</span>
-        </div>
-        <div class="hud-bar-row">
-          <span class="bar-label">🍗</span>
-          <div class="bar-track"><div class="bar-fill hunger-fill" id="bar-hunger"></div></div>
-          <span class="bar-val" id="val-hunger">100%</span>
-        </div>
-        <div class="hud-bar-row">
-          <span class="bar-label">💧</span>
-          <div class="bar-track"><div class="bar-fill thirst-fill" id="bar-thirst"></div></div>
-          <span class="bar-val" id="val-thirst">100%</span>
-        </div>
+  <!-- Mini HUD -->
+  <div id="mini-hud">
+    <div class="mhud-left">
+      <div class="mhud-avatar" id="mhud-avatar"></div>
+      <div class="mhud-name-lv">
+        <span class="mhud-name" id="mhud-name">HERO</span>
+        <span class="mhud-lv">LV <span id="mhud-level">1</span></span>
       </div>
     </div>
-    <div class="hud-center">
-      <div class="hud-xp-row">
-        <span class="bar-label">EXP</span>
+    <div class="mhud-center">
+      <div class="mhud-bar-row">
+        <span>❤️</span>
+        <div class="bar-track bar-track-wide"><div class="bar-fill hp-fill" id="bar-hp"></div></div>
+        <span id="val-hp" class="mhud-val">100</span>
+      </div>
+      <div class="mhud-bar-row">
+        <span>⚡</span>
         <div class="bar-track bar-track-wide"><div class="bar-fill xp-fill" id="bar-xp"></div></div>
-        <span class="bar-val" id="val-xp">0/100</span>
+        <span id="val-xp" class="mhud-val">0/100</span>
       </div>
-      <div id="hud-alerts"></div>
     </div>
-    <div class="hud-right">
-      <div class="hud-coins">🪙 <span id="hud-coins">0</span></div>
-      <div class="hud-streak">🔥 STREAK: <span id="hud-streak">0</span></div>
-      <div class="hud-meta" id="hud-meta-cal">🍽️ 0/0 cal</div>
-      <div class="hud-meta" id="hud-meta-agua">💧 0/0 ml</div>
+    <div class="mhud-right">
+      <div class="mhud-coins">🪙 <span id="mhud-coins">0</span></div>
+      <div class="mhud-streak">🔥 <span id="mhud-streak">0</span></div>
     </div>
   </div>
 
-  <!-- Tab Content Wrapper -->
-  <div id="tab-content-wrapper">
+  <!-- Game Pages -->
+  <div id="game-pages">
 
-    <!-- ─── HOME TAB ─── -->
-    <div id="tab-inicio" class="tab-content active">
-      <div class="inicio-layout">
-        <div class="house-panel panel">
-          <div class="panel-title">🏠 MY CASTLE</div>
-          <div class="house-scene" id="house-scene">
-            <div class="house-floor"></div>
-            <div class="house-back-wall"></div>
-            <div class="house-items" id="house-items"></div>
-            <div class="character-in-house" id="char-in-house"></div>
-            <div class="house-speech" id="house-speech"></div>
-          </div>
+    <!-- ── HOME / Character Stage ── -->
+    <div id="page-main" class="game-page active">
+      <div class="char-stage">
+        <div class="char-stage-glow"></div>
+        <div class="char-display-wrap">
+          <div class="char-display" id="char-display"></div>
+          <div class="char-mood" id="char-mood">😊</div>
         </div>
-        <div class="stats-side">
+        <div class="char-info-box">
+          <div class="char-hero-name" id="char-hero-name">HERO</div>
+          <div class="char-class-tag" id="char-class-tag">WARRIOR</div>
+        </div>
+        <div class="char-stats-strip" id="char-stats-strip"></div>
+        <div class="house-speech" id="house-speech"></div>
+      </div>
+      <div class="home-bottom-panels">
+        <div class="panel home-panel-sm">
+          <div class="panel-title">🎯 TODAY</div>
+          <div class="daily-goals" id="daily-goals"></div>
+        </div>
+        <div class="panel home-panel-sm">
+          <div class="panel-title">🏆 HISTORY</div>
+          <div class="battle-history" id="battle-history-mini">No battles yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BATTLE PAGE ── -->
+    <div id="page-battle" class="game-page">
+      <div class="page-header">
+        <button class="back-btn" onclick="showPage('main')">← BACK</button>
+        <span class="page-title">⚔️ BATTLE</span>
+      </div>
+      <div class="battle-choice-grid" id="battle-choice-grid">
+        <div class="bcc" onclick="showBattleSub('online')">
+          <div class="bcc-icon">🌐</div>
+          <div class="bcc-title">ONLINE BATTLE</div>
+          <div class="bcc-desc">Challenge real players & CPU</div>
+        </div>
+        <div class="bcc" onclick="showBattleSub('earn')">
+          <div class="bcc-icon">🌟</div>
+          <div class="bcc-title">EARN COINS</div>
+          <div class="bcc-desc">Upload achievements for rewards</div>
+        </div>
+      </div>
+
+      <!-- Online Battle sub -->
+      <div id="battle-sub-online" class="battle-sub hidden">
+        <button class="sub-back-btn" onclick="hideBattleSub()">← BACK</button>
+        <div class="battle-sub-inner">
           <div class="panel">
-            <div class="panel-title">⚔️ HERO STATISTICS</div>
-            <div class="stat-grid" id="stat-grid"></div>
+            <div class="panel-title">🤖 CPU PRACTICE</div>
+            <div class="opponents-list" id="opponents-list"></div>
           </div>
           <div class="panel">
-            <div class="panel-title">🎯 TODAY'S GOALS</div>
-            <div class="daily-goals" id="daily-goals"></div>
+            <div class="panel-title">🌐 CHALLENGE ONLINE</div>
+            <div class="online-status-row" id="libre-online-status">
+              <span class="online-dot" id="libre-dot"></span>
+              <span id="libre-conn-text">Connecting...</span>
+            </div>
+            <input id="libre-peer-id" type="text" placeholder="Paste rival's ID...">
+            <button class="btn-primary btn-sm" style="margin-top:8px" onclick="librarChallenge()">⚡ CHALLENGE</button>
+            <div id="incoming-challenge" class="hidden" style="margin-top:10px">
+              <div class="challenge-alert" id="challenge-alert-text"></div>
+              <button class="btn-primary btn-sm" onclick="acceptChallenge()">✅ ACCEPT</button>
+              <button class="btn-secondary btn-sm" style="margin-top:4px" onclick="rejectChallenge()">❌ REJECT</button>
+            </div>
           </div>
-          <div class="panel">
-            <div class="panel-title">🏆 BATTLE HISTORY</div>
-            <div class="battle-history" id="battle-history-mini">No battles yet.</div>
+        </div>
+      </div>
+
+      <!-- Earn Coins sub -->
+      <div id="battle-sub-earn" class="battle-sub hidden">
+        <button class="sub-back-btn" onclick="hideBattleSub()">← BACK</button>
+        <div class="earn-form panel">
+          <div class="panel-title">🌟 LOG YOUR ACHIEVEMENT</div>
+          <label>CATEGORY</label>
+          <select id="earn-type">
+            <option value="sport">🏆 Sport / Athletic</option>
+            <option value="healthy_food">🥗 Healthy Eating</option>
+            <option value="workout">💪 Workout / Training</option>
+            <option value="adventure">🌍 Adventure / Travel</option>
+            <option value="social">🎉 Social / Events</option>
+            <option value="skill">🎨 Skill / Art / Music</option>
+            <option value="other">⚡ Other Cool Stuff</option>
+          </select>
+          <label style="margin-top:10px">DESCRIPTION</label>
+          <input id="earn-desc" type="text" placeholder="Describe what you did..." maxlength="100">
+          <label style="margin-top:10px">PHOTO / VIDEO THUMBNAIL</label>
+          <div class="photo-choice-btns">
+            <button class="btn-secondary btn-sm" onclick="triggerEarnCamera()">📷 TAKE PHOTO</button>
+            <button class="btn-secondary btn-sm" onclick="triggerEarnLibrary()">🖼️ FROM LIBRARY</button>
           </div>
+          <input type="file" id="earn-input-camera" accept="image/*" capture="environment" style="display:none" onchange="handleEarnPhoto(event)">
+          <input type="file" id="earn-input-library" accept="image/*" style="display:none" onchange="handleEarnPhoto(event)">
+          <img id="earn-preview" class="earn-preview hidden" alt="Achievement photo">
+          <button class="btn-primary btn-full btn-gold" style="margin-top:14px" onclick="submitAchievement()">🚀 SUBMIT FOR COINS</button>
         </div>
       </div>
     </div>
 
-    <!-- ─── LOG TAB ─── -->
-    <div id="tab-registro" class="tab-content">
-      <div class="registro-layout">
-        <div class="panel registro-form-panel">
-          <div class="panel-title">📸 LOG FOOD OR DRINK</div>
-          <div class="photo-area" id="photo-area" onclick="triggerCamera()">
-            <div id="photo-preview-inner">
-              <div class="camera-icon">📷</div>
-              <div class="camera-text">TAP TO TAKE PHOTO</div>
-            </div>
-            <img id="food-photo" class="food-photo hidden" alt="Food photo">
-          </div>
-          <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
-          <div class="registro-form">
-            <div class="form-row-grid">
-              <div>
-                <label>TYPE</label>
-                <select id="food-type">
-                  <option value="comida">🍽️ Food</option>
-                  <option value="agua">💧 Water</option>
-                  <option value="bebida">🥤 Drink</option>
-                  <option value="snack">🍎 Snack</option>
-                  <option value="suplemento">💊 Supplement</option>
-                </select>
-              </div>
-              <div>
-                <label>DESCRIPTION</label>
-                <input id="food-desc" type="text" placeholder="What did you eat?">
-              </div>
-            </div>
-            <div class="form-row-grid form-row-4">
-              <div>
-                <label>CALORIES</label>
-                <input id="food-cal" type="number" placeholder="0" min="0">
-              </div>
-              <div>
-                <label>PROTEIN(g)</label>
-                <input id="food-prot" type="number" placeholder="0" min="0">
-              </div>
-              <div>
-                <label>CARBS(g)</label>
-                <input id="food-carbs" type="number" placeholder="0" min="0">
-              </div>
-              <div>
-                <label>WATER(ml)</label>
-                <input id="food-agua" type="number" placeholder="0" min="0">
-              </div>
-            </div>
-            <button class="btn-primary btn-full" onclick="registrarAlimento()">⚔️ LOG AND GAIN EXPERIENCE</button>
-          </div>
+    <!-- ── FRIENDS PAGE ── -->
+    <div id="page-friends" class="game-page">
+      <div class="page-header">
+        <button class="back-btn" onclick="showPage('main')">← BACK</button>
+        <span class="page-title">👥 FRIENDS</span>
+        <button class="leaderboard-btn" onclick="showLeaderboard()">🏆 RANKS</button>
+      </div>
+      <div class="friends-layout">
+        <div class="panel friends-side-panel">
+          <div class="panel-title">🆔 YOUR ID</div>
+          <div class="my-peer-id" id="my-peer-id">Connecting...</div>
+          <button class="btn-secondary btn-sm" onclick="copyPeerId()">📋 COPY</button>
+          <hr class="panel-divider">
+          <div class="panel-title">➕ ADD FRIEND</div>
+          <input id="add-friend-name" type="text" placeholder="Username...">
+          <input id="add-friend-peer" type="text" placeholder="Online ID..." style="margin-top:6px">
+          <button class="btn-primary btn-sm" style="margin-top:8px" onclick="agregarAmigo()">ADD FRIEND</button>
+          <hr class="panel-divider">
+          <div class="panel-title">📊 MY STATS</div>
+          <div id="my-battle-stats" class="battle-stats-box"></div>
         </div>
-        <div class="panel registro-log-panel">
-          <div class="panel-title">📋 TODAY'S LOG</div>
-          <div class="log-totals" id="log-totals"></div>
-          <div class="log-list" id="log-list"><div class="empty-state">No logs today. Start eating!</div></div>
+        <div class="panel friends-list-panel">
+          <div class="panel-title">👥 FRIENDS (<span id="friends-count">0</span>)</div>
+          <div class="friends-list" id="friends-list"><div class="empty-state">No friends yet!</div></div>
+        </div>
+      </div>
+      <!-- Leaderboard overlay -->
+      <div id="leaderboard-overlay" class="fullpage-overlay hidden">
+        <div class="page-header">
+          <button class="back-btn" onclick="hideLeaderboard()">← BACK</button>
+          <span class="page-title">🏆 GLOBAL RANKINGS</span>
+        </div>
+        <div class="leaderboard-list" id="leaderboard-list"></div>
+      </div>
+    </div>
+
+    <!-- ── DISCOVER PAGE ── -->
+    <div id="page-discover" class="game-page">
+      <div class="page-header">
+        <button class="back-btn" onclick="showPage('main')">← BACK</button>
+        <span class="page-title">🌟 DISCOVER</span>
+      </div>
+      <div class="discover-feed" id="discover-feed">
+        <div class="empty-state">No achievements yet.<br>Be the first to post!</div>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS PAGE ── -->
+    <div id="page-settings" class="game-page">
+      <div class="page-header">
+        <button class="back-btn" onclick="showPage('main')">← BACK</button>
+        <span class="page-title">⚙️ SETTINGS</span>
+      </div>
+      <div class="settings-list">
+        <div class="settings-item" onclick="showPage('settings-account')">
+          <span class="si-icon">👤</span>
+          <div class="si-text"><div class="si-label">ACCOUNT</div><div class="si-desc">Manage your account &amp; email</div></div>
+          <span class="si-arrow">▶</span>
+        </div>
+        <div class="settings-item" onclick="showPage('settings-avatar')">
+          <span class="si-icon">🎭</span>
+          <div class="si-text"><div class="si-label">AVATAR &amp; LIKENESS</div><div class="si-desc">Update your pixel character</div></div>
+          <span class="si-arrow">▶</span>
+        </div>
+        <div class="settings-item" onclick="showPage('settings-shop')">
+          <span class="si-icon">🛒</span>
+          <div class="si-text"><div class="si-label">SHOP</div><div class="si-desc">Buy gear &amp; items with coins</div></div>
+          <span class="si-arrow">▶</span>
+        </div>
+        <div class="settings-item" onclick="toggleMusic()">
+          <span class="si-icon">🔊</span>
+          <div class="si-text"><div class="si-label">MUSIC</div><div class="si-desc" id="music-status-text">Toggle background music</div></div>
+          <span class="si-arrow" id="music-toggle-btn">ON</span>
+        </div>
+        <hr class="panel-divider" style="margin:4px 12px">
+        <div class="settings-item settings-item-danger" onclick="logoutGame()">
+          <span class="si-icon">🚪</span>
+          <div class="si-text"><div class="si-label">LOG OUT</div><div class="si-desc">Return to login screen</div></div>
+          <span class="si-arrow">▶</span>
         </div>
       </div>
     </div>
 
-    <!-- ─── WORLD TAB (Friends + Battle) ─── -->
-    <div id="tab-world" class="tab-content">
-      <div class="subnav-bar">
-        <button class="subnav-btn active" onclick="showWorldSub('friends')" id="world-btn-friends">👥 FRIENDS</button>
-        <button class="subnav-btn" onclick="showWorldSub('battle')" id="world-btn-battle">⚔️ BATTLE</button>
+    <!-- Settings sub-pages -->
+    <div id="page-settings-account" class="game-page">
+      <div class="page-header">
+        <button class="back-btn" onclick="showPage('settings')">← BACK</button>
+        <span class="page-title">👤 ACCOUNT</span>
       </div>
-      <div class="subnav-content">
+      <div id="settings-account-content" class="settings-content"></div>
+    </div>
 
-        <!-- Friends sub-tab -->
-        <div id="world-sub-friends" class="world-sub active">
-          <div class="amigos-layout">
-            <div class="panel amigos-side">
-              <div class="panel-title">🆔 YOUR ONLINE ID</div>
-              <div class="my-peer-id" id="my-peer-id">Connecting...</div>
-              <button class="btn-secondary btn-sm" onclick="copyPeerId()">📋 COPY ID</button>
-              <hr class="panel-divider">
-              <div class="panel-title">➕ ADD FRIEND</div>
-              <input id="add-friend-name" type="text" placeholder="Friend's username...">
-              <input id="add-friend-peer" type="text" placeholder="Friend's online ID..." style="margin-top:6px">
-              <button class="btn-primary btn-sm" style="margin-top:8px" onclick="agregarAmigo()">ADD FRIEND</button>
-              <hr class="panel-divider">
-              <div class="panel-title">📊 MY BATTLE STATS</div>
-              <div id="my-battle-stats" class="battle-stats-box"></div>
-            </div>
-            <div class="panel amigos-list-panel">
-              <div class="panel-title">👥 FRIENDS (<span id="friends-count">0</span>)</div>
-              <div class="friends-list" id="friends-list"><div class="empty-state">No friends yet. Share your ID to play!</div></div>
-            </div>
+    <div id="page-settings-avatar" class="game-page">
+      <div class="page-header">
+        <button class="back-btn" onclick="showPage('settings')">← BACK</button>
+        <span class="page-title">🎭 AVATAR</span>
+      </div>
+      <div class="settings-content">
+        <div class="panel" style="max-width:400px;margin:0 auto">
+          <div class="panel-title">CURRENT AVATAR</div>
+          <div class="settings-avatar-preview" id="settings-avatar-preview"></div>
+          <div class="panel-title" style="margin-top:16px">UPDATE PHOTO</div>
+          <div class="photo-choice-btns">
+            <button class="btn-secondary" onclick="triggerSettingsCamera()">📷 TAKE PHOTO</button>
+            <button class="btn-secondary" onclick="triggerSettingsLibrary()">🖼️ FROM LIBRARY</button>
           </div>
+          <input type="file" id="settings-avatar-camera" accept="image/*" capture="user" style="display:none" onchange="handleSettingsAvatarPhoto(event)">
+          <input type="file" id="settings-avatar-library" accept="image/*" style="display:none" onchange="handleSettingsAvatarPhoto(event)">
+          <p style="font-size:7px;color:var(--gray);margin-top:10px;line-height:1.8">Your photo is analyzed for skin tone and hair color, then turned into a Pokémon-style pixel hero with your character's class outfit.</p>
         </div>
-
-        <!-- Battle sub-tab -->
-        <div id="world-sub-battle" class="world-sub">
-          <div class="libre-layout">
-            <div class="panel libre-side">
-              <div class="panel-title">⚡ FREE BATTLE</div>
-              <p class="libre-desc">Fight with no coin stakes!<br>Just glory and fun.</p>
-              <div class="libre-my-char" id="libre-my-char"></div>
-              <hr class="panel-divider">
-              <div class="panel-title">🌐 ONLINE CHALLENGE</div>
-              <div class="online-status-row" id="libre-online-status">
-                <span class="online-dot" id="libre-dot"></span>
-                <span id="libre-conn-text">Connecting...</span>
-              </div>
-              <input id="libre-peer-id" type="text" placeholder="Paste rival's ID...">
-              <button class="btn-primary btn-sm" style="margin-top:8px" onclick="librarChallenge()">⚡ CHALLENGE ONLINE</button>
-              <hr class="panel-divider">
-              <div id="incoming-challenge" class="hidden">
-                <div class="challenge-alert" id="challenge-alert-text"></div>
-                <button class="btn-primary btn-sm" onclick="acceptChallenge()">✅ ACCEPT</button>
-                <button class="btn-secondary btn-sm" onclick="rejectChallenge()">❌ REJECT</button>
-              </div>
-            </div>
-            <div class="panel libre-opponents-panel">
-              <div class="panel-title">🤖 PRACTICE OPPONENTS (CPU)</div>
-              <div class="opponents-list" id="opponents-list"></div>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
 
-    <!-- ─── MENU TAB (Shop + Profile) ─── -->
-    <div id="tab-menu-main" class="tab-content">
-      <div class="subnav-bar">
-        <button class="subnav-btn active" onclick="showMenuSub('shop')" id="menu-btn-shop">🛒 SHOP</button>
-        <button class="subnav-btn" onclick="showMenuSub('profile')" id="menu-btn-profile">👤 PROFILE</button>
+    <div id="page-settings-shop" class="game-page">
+      <div class="page-header">
+        <button class="back-btn" onclick="showPage('settings')">← BACK</button>
+        <span class="page-title">🛒 SHOP</span>
       </div>
-      <div class="subnav-content">
-
-        <!-- Shop sub-tab -->
-        <div id="menu-sub-shop" class="menu-sub active">
-          <div class="tienda-layout">
-            <div class="panel tienda-side">
-              <div class="panel-title">🛒 THE KINGDOM SHOP</div>
-              <div class="tienda-coins-display">🪙 <span id="tienda-coins">0</span> coins</div>
-              <div class="panel-title" style="margin-top:12px">CATEGORIES</div>
-              <div class="tienda-cats" id="tienda-cats">
-                <button class="cat-btn active" onclick="filterShop(null, this)">ALL</button>
-                <button class="cat-btn" onclick="filterShop('accesorio', this)">💍 ACCESSORIES</button>
-                <button class="cat-btn" onclick="filterShop('arma', this)">⚔️ WEAPONS</button>
-                <button class="cat-btn" onclick="filterShop('armadura', this)">🛡️ ARMOR</button>
-                <button class="cat-btn" onclick="filterShop('mueble', this)">🪑 FURNITURE</button>
-                <button class="cat-btn" onclick="filterShop('decoracion', this)">🖼️ DECOR</button>
-              </div>
-              <hr class="panel-divider">
-              <div class="panel-title">✅ OWNED</div>
-              <div id="owned-items" class="owned-list">Nothing yet</div>
-            </div>
-            <div class="panel tienda-grid-panel">
-              <div class="panel-title" id="tienda-cat-title">ALL ITEMS</div>
-              <div class="tienda-grid" id="tienda-grid"></div>
-            </div>
+      <div class="tienda-layout">
+        <div class="panel tienda-side">
+          <div class="panel-title">🛒 KINGDOM SHOP</div>
+          <div class="tienda-coins-display">🪙 <span id="tienda-coins">0</span> coins</div>
+          <div class="panel-title" style="margin-top:12px">CATEGORIES</div>
+          <div class="tienda-cats" id="tienda-cats">
+            <button class="cat-btn active" onclick="filterShop(null, this)">ALL</button>
+            <button class="cat-btn" onclick="filterShop('accesorio', this)">💍 ACCESS.</button>
+            <button class="cat-btn" onclick="filterShop('arma', this)">⚔️ WEAPONS</button>
+            <button class="cat-btn" onclick="filterShop('armadura', this)">🛡️ ARMOR</button>
+            <button class="cat-btn" onclick="filterShop('mueble', this)">🪑 FURN.</button>
+            <button class="cat-btn" onclick="filterShop('decoracion', this)">🖼️ DECOR</button>
           </div>
+          <hr class="panel-divider">
+          <div class="panel-title">✅ OWNED</div>
+          <div id="owned-items" class="owned-list">Nothing yet</div>
         </div>
-
-        <!-- Profile sub-tab -->
-        <div id="menu-sub-profile" class="menu-sub">
-          <div id="profile-content" class="profile-layout"></div>
+        <div class="panel tienda-grid-panel">
+          <div class="panel-title" id="tienda-cat-title">ALL ITEMS</div>
+          <div class="tienda-grid" id="tienda-grid"></div>
         </div>
-
       </div>
     </div>
 
-  </div><!-- end tab-content-wrapper -->
+  </div><!-- end game-pages -->
 
-  <!-- Tab Nav (Bottom) -->
-  <div id="tab-nav">
-    <button class="tab-btn active" onclick="showTab('inicio')" id="tab-btn-inicio">
-      <span class="tab-icon">🏠</span>
-      <span class="tab-label">HOME</span>
+  <!-- Bottom Nav -->
+  <div id="bottom-nav">
+    <button class="nav-btn" onclick="showPage('battle')" id="nav-btn-battle">
+      <span class="nav-icon">⚔️</span>
+      <span class="nav-label">BATTLE</span>
     </button>
-    <button class="tab-btn" onclick="showTab('registro')" id="tab-btn-registro">
-      <span class="tab-icon">📸</span>
-      <span class="tab-label">LOG</span>
+    <button class="nav-btn" onclick="showPage('friends')" id="nav-btn-friends">
+      <span class="nav-icon">👥</span>
+      <span class="nav-label">FRIENDS</span>
     </button>
-    <button class="tab-btn" onclick="showTab('world')" id="tab-btn-world">
-      <span class="tab-icon">🌐</span>
-      <span class="tab-label">WORLD</span>
+    <button class="nav-btn nav-btn-home" onclick="showPage('main')" id="nav-btn-main">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">HOME</span>
     </button>
-    <button class="tab-btn" onclick="showTab('menu-main')" id="tab-btn-menu-main">
-      <span class="tab-icon">☰</span>
-      <span class="tab-label">MENU</span>
+    <button class="nav-btn" onclick="showPage('discover')" id="nav-btn-discover">
+      <span class="nav-icon">🌟</span>
+      <span class="nav-label">DISCOVER</span>
+    </button>
+    <button class="nav-btn" onclick="showPage('settings')" id="nav-btn-settings">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">SETTINGS</span>
     </button>
   </div>
 
