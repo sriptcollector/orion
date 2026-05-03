@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0d" />
+  <title>mental · body language reader</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>mental</h1>
+    <p class="tag">a video body-language reader · signals, not verdicts</p>
+    <div class="actions">
+      <label class="btn primary" for="file">
+        <span>Import / record</span>
+        <input id="file" type="file" accept="video/*" capture="environment" hidden />
+      </label>
+      <button id="analyze" class="btn ghost" disabled>Pre-analyze full clip</button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section class="viewer">
+      <div class="player">
+        <video id="video" playsinline preload="metadata"></video>
+        <canvas id="overlay"></canvas>
+        <div id="loading" class="loading hidden">
+          <div class="spinner"></div>
+          <span id="loading-text">loading models…</span>
+        </div>
+        <div id="empty" class="empty">
+          <div class="empty-inner">
+            <div class="hint">no clip loaded</div>
+            <p>Tap <strong>Import / record</strong> above to pick a video from your library or record one with the camera.</p>
+            <p class="fine">Everything runs on-device. Nothing is uploaded.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="transport">
+        <button id="back10" class="t-btn" title="-10s">⏮</button>
+        <button id="play" class="t-btn play" title="play / pause">▶</button>
+        <button id="fwd10" class="t-btn" title="+10s">⏭</button>
+        <span id="time" class="time">00:00 / 00:00</span>
+        <span class="grow"></span>
+        <label class="rate">
+          speed
+          <select id="rate">
+            <option value="0.25">0.25×</option>
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="1.5">1.5×</option>
+            <option value="2">2×</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="timeline-wrap">
+        <div id="timeline" class="timeline">
+          <canvas id="timeline-canvas"></canvas>
+          <div id="playhead" class="playhead"></div>
+        </div>
+        <div class="legend">
+          <span class="sw align"></span>alignment
+          <span class="sw open"></span>openness
+          <span class="sw tense"></span>tension
+          <span class="sw engage"></span>engagement
+          <span class="sw valence"></span>valence
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <h2>live readout</h2>
+      <ul class="signals" id="signals">
+        <li data-key="alignment">
+          <div class="row"><span class="name">alignment</span><span class="val">—</span></div>
+          <div class="bar"><i class="fill align"></i></div>
+          <p class="why">coherence between body, face, hands</p>
+        </li>
+        <li data-key="openness">
+          <div class="row"><span class="name">openness</span><span class="val">—</span></div>
+          <div class="bar"><i class="fill open"></i></div>
+          <p class="why">arms open vs. closed off</p>
+        </li>
+        <li data-key="tension">
+          <div class="row"><span class="name">tension</span><span class="val">—</span></div>
+          <div class="bar"><i class="fill tense"></i></div>
+          <p class="why">brow + jaw + shoulder load</p>
+        </li>
+        <li data-key="engagement">
+          <div class="row"><span class="name">engagement</span><span class="val">—</span></div>
+          <div class="bar"><i class="fill engage"></i></div>
+          <p class="why">eyes open, facing camera</p>
+        </li>
+        <li data-key="valence">
+          <div class="row"><span class="name">valence</span><span class="val">—</span></div>
+          <div class="bar bipolar"><i class="fill valence"></i></div>
+          <p class="why">smile − frown − brow-down</p>
+        </li>
+      </ul>
+
+      <h3>top tells right now</h3>
+      <ul id="tells" class="tells"><li class="muted">play the clip to surface tells</li></ul>
+
+      <h3>moments</h3>
+      <div class="moments-row">
+        <button id="flag" class="btn small" disabled>flag this moment</button>
+        <button id="clear-moments" class="btn small ghost">clear</button>
+      </div>
+      <ul id="moments" class="moments"></ul>
+
+      <details class="disclaimer">
+        <summary>about these readings</summary>
+        <p>These signals are computed from MediaPipe pose and face-blendshape landmarks. They are <strong>heuristics</strong> — useful for surfacing patterns, not for diagnosing what someone "really" thinks. Body language is context-dependent. Treat the readout as a magnifying glass, not a verdict.</p>
+      </details>
+    </aside>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
